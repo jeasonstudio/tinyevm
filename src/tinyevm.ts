@@ -2,7 +2,7 @@ import { BlockHeader } from '@ethereumjs/block';
 import { Chain, Common } from '@ethereumjs/common';
 import { Transaction } from '@ethereumjs/tx';
 import * as asm from '@ethersproject/asm';
-import { Context } from './context';
+import { Context, IContextEEI } from './context';
 import { opcodeLabelMap, UNIMPLEMENTED } from './opcodes';
 
 const debug = require('debug')('tinyevm:core');
@@ -33,11 +33,14 @@ export class TinyEVM implements ITinyEVMOpts {
     Object.assign(this, opts);
   }
 
-  public async runTx(tx: Transaction): Promise<IExecuteResult> {
+  public async runTx(
+    tx: Transaction,
+    eei?: Partial<IContextEEI>
+  ): Promise<IExecuteResult> {
     const code = tx.data.toString('hex');
     debug('runTx', code);
     const asmOpcodes = asm.disassemble(tx.data.toString('hex'));
-    const ctx = new Context(code, tx.gasLimit);
+    const ctx = new Context(code, tx.gasLimit, eei ?? {});
 
     const operations = asmOpcodes.map((item) => {
       const opcodeLabel = item.opcode.mnemonic;

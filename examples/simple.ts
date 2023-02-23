@@ -1,4 +1,4 @@
-import { createTransaction, TinyEVM } from '../src';
+import { createTx, TinyEVM } from '../src';
 import { Transaction } from '@ethereumjs/tx';
 
 /*
@@ -13,7 +13,7 @@ const bytecode = '0x604260005260206000F3';
 
 async function main() {
   const tinyevm = new TinyEVM();
-  const tx = createTransaction({ data: bytecode });
+  const tx = createTx({ data: bytecode });
 
   const result = await tinyevm.runTx(tx);
   console.log('returnValue', result.returnValue);
