@@ -33,10 +33,6 @@ export class TinyEVM implements ITinyEVMOpts {
     Object.assign(this, opts);
   }
 
-  // public async runBytecode(bytecode: string): Promise<string> {}
-
-  // public async runOpcode(opcodes: any[]): Promise<string> {}
-
   public async runTx(tx: Transaction): Promise<IExecuteResult> {
     const code = tx.data.toString('hex');
     debug('runTx', code);
@@ -58,7 +54,7 @@ export class TinyEVM implements ITinyEVMOpts {
 
     return {
       executionGasUsed: ctx.gasUsed,
-      returnValue: ctx.returnValue,
+      returnValue: `0x${ctx.returnValue}`,
     };
   }
 }

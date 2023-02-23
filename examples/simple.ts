@@ -1,7 +1,5 @@
-import { TinyEVM } from '../src/tinyevm';
+import { createTransaction, TinyEVM } from '../src';
 import { Transaction } from '@ethereumjs/tx';
-import { BlockHeader } from '@ethereumjs/block';
-import { Chain, Common } from '@ethereumjs/common';
 
 /*
   PUSH1 0x42
@@ -14,14 +12,13 @@ import { Chain, Common } from '@ethereumjs/common';
 const bytecode = '0x604260005260206000F3';
 
 async function main() {
-  const common = new Common({ chain: Chain.Mainnet });
-  const blockHeader = BlockHeader.fromHeaderData({}, { common });
-  const tinyevm = new TinyEVM({ common, blockHeader });
-  const tx = Transaction.fromTxData({ data: bytecode }, { common });
-  const { returnValue, executionGasUsed } = await tinyevm.runTx(tx);
-  console.log('returnValue', returnValue);
-  console.log('executionGasUsed', executionGasUsed.toString());
+  const tinyevm = new TinyEVM();
+  const tx = createTransaction({ data: bytecode });
+
+  const result = await tinyevm.runTx(tx);
+  console.log('returnValue', result.returnValue);
   // returnValue 00000000000000000000000000000042
+  console.log('executionGasUsed', result.executionGasUsed.toString());
 }
 
 main().catch(console.error);
