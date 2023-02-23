@@ -1,9 +1,12 @@
+import { Address, bufferToBigInt } from '@ethereumjs/util';
+import { add0x } from '../utils';
 import { AOpcode, opcode } from './common';
 
 @opcode(0x30, 'ADDRESS', 'myAddr = address')
 export class ADDRESS extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'ADDRESS(0x30)' not implemented.`);
+    const address = this.ctx.tx.to ?? Address.zero();
+    this.ctx.stack.push(bufferToBigInt(address.buf));
   }
   async gasUsed() {
     return BigInt(0);
@@ -13,7 +16,12 @@ export class ADDRESS extends AOpcode {
 @opcode(0x31, 'BALANCE', 'wei = balance(address)')
 export class BALANCE extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'BALANCE(0x31)' not implemented.`);
+    const addressBigInt = this.ctx.stack.pop();
+    const address = Address.fromString(
+      addressBigInt.toString(16).padStart(40, '0')
+    );
+    const balance = (await this.ctx.eei.getAccount(address)).balance;
+    this.ctx.stack.push(balance);
   }
   async gasUsed() {
     return BigInt(0);
@@ -23,7 +31,10 @@ export class BALANCE extends AOpcode {
 @opcode(0x32, 'ORIGIN', 'txOrigin = origin')
 export class ORIGIN extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'ORIGIN(0x32)' not implemented.`);
+    // 这里的实现不准确，origin 应该是交易的最初调用者
+    // 但 TinyEVM 并没有合约之间调用的能力，所以这里直接返回 sender
+    const sender = this.ctx.tx.getSenderAddress();
+    this.ctx.stack.push(bufferToBigInt(sender.buf));
   }
   async gasUsed() {
     return BigInt(0);
@@ -33,7 +44,8 @@ export class ORIGIN extends AOpcode {
 @opcode(0x33, 'CALLER', 'msgSender = caller')
 export class CALLER extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'CALLER(0x33)' not implemented.`);
+    const sender = this.ctx.tx.getSenderAddress();
+    this.ctx.stack.push(bufferToBigInt(sender.buf));
   }
   async gasUsed() {
     return BigInt(0);
@@ -43,7 +55,7 @@ export class CALLER extends AOpcode {
 @opcode(0x34, 'CALLVALUE', 'msgValue = callvalue')
 export class CALLVALUE extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'CALLVALUE(0x34)' not implemented.`);
+    this.ctx.stack.push(this.ctx.tx.value);
   }
   async gasUsed() {
     return BigInt(0);
@@ -53,7 +65,14 @@ export class CALLVALUE extends AOpcode {
 @opcode(0x35, 'CALLDATALOAD', 'calldataWordValue = calldataload(byteOffet)')
 export class CALLDATALOAD extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'CALLDATALOAD(0x35)' not implemented.`);
+    const pos = this.ctx.stack.pop();
+    if (pos > this.ctx.codeSize) {
+      this.ctx.stack.push(BigInt(0));
+      return;
+    }
+    const i = Number(pos);
+    const loaded = this.ctx.code.slice(i, i + 64).padStart(64, '0');
+    this.ctx.stack.push(BigInt(add0x(loaded)));
   }
   async gasUsed() {
     return BigInt(0);
@@ -63,7 +82,7 @@ export class CALLDATALOAD extends AOpcode {
 @opcode(0x36, 'CALLDATASIZE', 'calldataLength = calldatasize')
 export class CALLDATASIZE extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'CALLDATASIZE(0x36)' not implemented.`);
+    this.ctx.stack.push(this.ctx.codeSize);
   }
   async gasUsed() {
     return BigInt(0);
@@ -83,7 +102,7 @@ export class CALLDATACOPY extends AOpcode {
 @opcode(0x38, 'CODESIZE', 'myCodeLength = codesize')
 export class CODESIZE extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'CODESIZE(0x38)' not implemented.`);
+    this.ctx.stack.push(this.ctx.codeSize);
   }
   async gasUsed() {
     return BigInt(0);
@@ -93,7 +112,16 @@ export class CODESIZE extends AOpcode {
 @opcode(0x39, 'CODECOPY', 'codecopy(dstMemoryIndex, codeIndex, length)')
 export class CODECOPY extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'CODECOPY(0x39)' not implemented.`);
+    const [memOffset, codeOffset, dataLength] = this.ctx.stack.popN(3);
+
+    if (dataLength !== BigInt(0)) {
+      const data = this.ctx.code.slice(
+        Number(codeOffset),
+        Number(codeOffset + dataLength)
+      );
+      const memOffsetNum = Number(memOffset);
+      this.ctx.memory.write(memOffsetNum, data);
+    }
   }
   async gasUsed() {
     return BigInt(0);

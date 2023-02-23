@@ -1,6 +1,10 @@
 import { Transaction, TxData } from '@ethereumjs/tx';
 import { AbiCoder, Interface, defaultAbiCoder } from '@ethersproject/abi';
 
+export const cut0x = (str: string) =>
+  str.startsWith('0x') ? str.slice(2) : str;
+export const add0x = (str: string) => (str.startsWith('0x') ? str : `0x${str}`);
+
 /**
  * 构造一笔交易
  */
@@ -21,10 +25,9 @@ export const createDeployContractTx = (
 ) => {
   const contract = new Interface(abi);
   const params = contract.encodeDeploy(deployArgv);
-  console.log('params', params);
   const deployData = Buffer.concat([
-    Buffer.from(bytecode, 'hex'),
-    Buffer.from(params, 'hex'),
+    Buffer.from(cut0x(bytecode), 'hex'),
+    Buffer.from(cut0x(params), 'hex'),
   ]);
   return createTx({ ...tx, data: deployData });
 };

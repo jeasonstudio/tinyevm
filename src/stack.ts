@@ -56,6 +56,12 @@ export class Stack {
     this.store[i] = tmp;
   }
 
+  public dup(position: number) {
+    assert(this.store.length >= position, '[tinyevm] stack underflow');
+    const i = this.store.length - position;
+    this.push(this.store[i]);
+  }
+
   public toString() {
     return this.store.map((item) => item.toString(16)).join(',');
   }

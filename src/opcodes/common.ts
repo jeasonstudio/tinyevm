@@ -1,13 +1,14 @@
 import assert from 'assert';
 import debug from 'debug';
 import type { Context } from '../context';
+import { add0x } from '../utils';
 
 // 添加一个 Abstract Opcode 用于给被 opcode 装饰的类添加类型保护
 export abstract class AOpcode {
-  public static readonly opcode: number;
-  public static readonly label: string;
-  public readonly opcode!: number;
-  public readonly label!: string;
+  public static opcode: number;
+  public static label: string;
+  public opcode!: number;
+  public label!: string;
   public constructor(
     readonly ctx: Context,
     // offset from operations(bytecode)
@@ -15,12 +16,12 @@ export abstract class AOpcode {
     // stack length
     readonly length: number,
     // push value for opcode
-    readonly pushValue?: string
+    readonly pushValue?: bigint
   ) {}
   public abstract execute(): Promise<void>;
   public abstract gasUsed?(): Promise<bigint>;
-  protected assert!: typeof assert;
-  protected debug!: ReturnType<typeof debug>;
+  public assert!: typeof assert;
+  public debug!: ReturnType<typeof debug>;
   [key: PropertyKey]: any;
 }
 
@@ -30,20 +31,20 @@ export const opcode = (opcode: number, label: string, doc?: string) => {
     // 上面 AOpcode 的实现
     class WrapperdOpcode extends constructor {
       public static opcode = opcode;
-      public static readonly label = label;
+      public static label = label;
       public static readonly doc = doc;
       public static readonly toString = () => {
         const hexOpcode = '0x' + opcode.toString(16).padStart(2, '0');
         return `${label.toUpperCase()}(${hexOpcode})`;
       };
       public static readonly valueOf = () => opcode;
-      public readonly opcode = opcode;
-      public readonly label = label;
+      public opcode = opcode;
+      public label = label;
       public constructor(
         readonly ctx: Context,
         readonly offset: number,
         readonly length: number,
-        readonly pushValue?: string
+        readonly pushValue?: bigint
       ) {
         super();
       }
@@ -62,10 +63,12 @@ export const opcode = (opcode: number, label: string, doc?: string) => {
         return gas || BigInt(0);
       }
       public toString() {
-        if (!this.pushValue?.length) {
+        if (this.pushValue === undefined) {
           return this.label.toUpperCase();
         }
-        return `${this.label.toUpperCase()} ${this.pushValue}`;
+        return `${this.label.toUpperCase()} ${add0x(
+          this.pushValue.toString(16)
+        )}`;
       }
     }
     // 这里不需要返回类型

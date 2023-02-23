@@ -86,7 +86,14 @@ export class STATICCALL extends AOpcode {
 @opcode(0xfd, 'REVERT', 'revert(returnDataOffset, returnDataLength)')
 export class REVERT extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'REVERT(0xfd)' not implemented.`);
+    const [offset, length] = this.ctx.stack.popN(2);
+    let returnData = '';
+    if (length !== BigInt(0)) {
+      returnData = this.ctx.memory.read(Number(offset), Number(length));
+    }
+    this.ctx.returnValue = returnData;
+    // TODO?
+    // throw new Error('[tinyevm] revert');
   }
   async gasUsed() {
     return BigInt(0);
@@ -96,7 +103,8 @@ export class REVERT extends AOpcode {
 @opcode(0xfe, 'INVALID', 'invalid')
 export class INVALID extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'INVALID(0xfe)' not implemented.`);
+    // TODO: 没看懂这个 opcode 的作用
+    // throw new Error(`[tinyevm] opcode 'INVALID(0xfe)' not implemented.`);
   }
   async gasUsed() {
     return BigInt(0);

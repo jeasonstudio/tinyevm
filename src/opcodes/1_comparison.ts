@@ -3,7 +3,9 @@ import { AOpcode, opcode } from './common';
 @opcode(0x10, 'LT', 'v = lt(a, b)')
 export class LT extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'LT(0x10)' not implemented.`);
+    const [a, b] = this.ctx.stack.popN(2);
+    const r = a < b ? BigInt(1) : BigInt(0);
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);
@@ -23,7 +25,10 @@ export class GT extends AOpcode {
 @opcode(0x12, 'SLT', 'v = slt(a, b)')
 export class SLT extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'SLT(0x12)' not implemented.`);
+    const [a, b] = this.ctx.stack.popN(2);
+    const r =
+      BigInt.asIntN(256, a) < BigInt.asIntN(256, b) ? BigInt(1) : BigInt(0);
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);
@@ -43,7 +48,9 @@ export class SGT extends AOpcode {
 @opcode(0x14, 'EQ', 'v = eq(a, b)')
 export class EQ extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'EQ(0x14)' not implemented.`);
+    const [a, b] = this.ctx.stack.popN(2);
+    const r = a === b ? BigInt(1) : BigInt(0);
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);
@@ -53,7 +60,9 @@ export class EQ extends AOpcode {
 @opcode(0x15, 'ISZERO', 'v = iszero(a)')
 export class ISZERO extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'ISZERO(0x15)' not implemented.`);
+    const a = this.ctx.stack.pop();
+    const r = a === BigInt(0) ? BigInt(1) : BigInt(0);
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);
@@ -123,7 +132,14 @@ export class SHL extends AOpcode {
 @opcode(0x1c, 'SHR', 'v = shr(shiftBits, value)')
 export class SHR extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'SHR(0x1c)' not implemented.`);
+    const [a, b] = this.ctx.stack.popN(2);
+    if (a > 256) {
+      this.ctx.stack.push(BigInt(0));
+      return;
+    }
+
+    const r = b >> a;
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);

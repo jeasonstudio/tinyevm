@@ -1,9 +1,8 @@
 import { BlockHeader } from '@ethereumjs/block';
 import { Chain, Common } from '@ethereumjs/common';
 import { Transaction } from '@ethereumjs/tx';
-import * as asm from '@ethersproject/asm';
+import assert from 'assert';
 import { Context, IContextEEI } from './context';
-import { opcodeLabelMap, UNIMPLEMENTED } from './opcodes';
 
 const debug = require('debug')('tinyevm:core');
 
@@ -39,20 +38,31 @@ export class TinyEVM implements ITinyEVMOpts {
   ): Promise<IExecuteResult> {
     const code = tx.data.toString('hex');
     debug('runTx', code);
-    const asmOpcodes = asm.disassemble(tx.data.toString('hex'));
-    const ctx = new Context(code, tx.gasLimit, eei ?? {});
-
-    const operations = asmOpcodes.map((item) => {
-      const opcodeLabel = item.opcode.mnemonic;
-      const OpcodeFactory = opcodeLabelMap[opcodeLabel] || UNIMPLEMENTED;
-      return new OpcodeFactory(ctx, item.offset, item.length, item.pushValue);
-    });
+    const ctx = new Context(tx, eei ?? {});
 
     debug('stack', ctx.stack.toString());
-    for (const operation of operations) {
+
+    const errors: Error[] = [];
+    while (ctx.operationCounter < ctx.operations.length) {
+      const operation = ctx.operations[ctx.operationCounter];
+      assert(ctx.operationCounter >= 0, '[tinyevm] invalid program counter');
+      assert(!!operation, '[tinyevm] invalid operation');
+      // try {
+      // 执行 opcode
       await operation.execute();
-      debug('stack', ctx.stack.toString());
-      ctx.gasUsed += await operation.gasUsed();
+      // 计算 gas
+      ctx.gasUsed += operation.gasUsed ? await operation.gasUsed() : BigInt(0);
+      // 更新 counter
+      ctx.operationCounter += 1;
+      console.log(ctx.operationCounter);
+      // } catch (err) {
+      //   const error = err as Error;
+      //   // 0x00
+      //   if (error.message === 'stop') {
+      //     throw error;
+      //   }
+      //   errors.push(error);
+      // }
     }
 
     return {

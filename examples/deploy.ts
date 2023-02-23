@@ -44,8 +44,9 @@ const contractBytecode =
 async function main() {
   const tinyevm = new TinyEVM();
   const tx = createDeployContractTx(contractABI, contractBytecode, [
-    BigInt(1000_000), // TotalSupply
+    1000_000, // TotalSupply
   ]);
+  console.log('tx.data', tx.data.toString('hex'));
   const result = await tinyevm.runTx(tx);
   console.log('returnValue', result.returnValue);
   console.log('executionGasUsed', result.executionGasUsed.toString());

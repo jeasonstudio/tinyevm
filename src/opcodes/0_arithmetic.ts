@@ -4,7 +4,7 @@ import { AOpcode, mod, opcode } from './common';
 @opcode(0x00, 'STOP', 'stop')
 export class STOP extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'STOP(0x00)' stop.`);
+    throw new Error('stop');
   }
   async gasUsed() {
     return BigInt(0);
