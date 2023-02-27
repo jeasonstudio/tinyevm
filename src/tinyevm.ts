@@ -43,6 +43,7 @@ export class TinyEVM implements ITinyEVMOpts {
 
     debug('stack', ctx.stack.toString());
 
+    // 程序运行
     while (ctx.programCounter < ctx.codeSize) {
       const opcode = ctx.code[ctx.programCounter];
       assert(ctx.programCounter >= 0, '[tinyevm] invalid program counter');

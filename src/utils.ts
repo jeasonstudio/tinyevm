@@ -1,5 +1,7 @@
 import { Transaction, TxData } from '@ethereumjs/tx';
 import { AbiCoder, Interface, defaultAbiCoder } from '@ethersproject/abi';
+import assert from 'assert';
+import { Opcode } from './opcodes';
 
 export const cut0x = (str: string) =>
   str.startsWith('0x') ? str.slice(2) : str;
@@ -34,3 +36,21 @@ export const createDeployContractTx = (
 
 // TODO
 export const createRunContractTx = () => {};
+
+export const opcode2bytecode = (opcodes: Array<string | Opcode>) => {
+  let bytecode = '';
+  for (const opcode of opcodes) {
+    if (typeof opcode === 'string') {
+      assert(
+        opcode.length % 2 === 0 && opcode.startsWith('0x'),
+        `[tinyevm] invalid value: ${opcode}`
+      );
+      bytecode += cut0x(opcode);
+    } else if (opcode.opcode !== undefined) {
+      bytecode += opcode.opcode.toString(16).padStart(2, '0');
+    } else {
+      assert(false, `[tinyevm] invalid opcodes: ${opcode}`);
+    }
+  }
+  return add0x(bytecode);
+};

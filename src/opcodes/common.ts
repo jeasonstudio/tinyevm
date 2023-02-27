@@ -1,7 +1,6 @@
 import assert from 'assert';
 import debug from 'debug';
 import type { Context } from '../context';
-import { add0x } from '../utils';
 
 // 添加一个 Abstract Opcode 用于给被 opcode 装饰的类添加类型保护
 export abstract class AOpcode {
@@ -20,6 +19,15 @@ export abstract class AOpcode {
   public debug!: ReturnType<typeof debug>;
   [key: PropertyKey]: any;
 }
+
+export class BaseOpcode extends AOpcode {
+  public async execute() {}
+  public async gasUsed() {
+    return BigInt(0);
+  }
+}
+
+export type Opcode = typeof BaseOpcode;
 
 // 用于将被装饰的类变成 Opcode
 export const opcode = (opcode: number, label: string, doc?: string) => {
