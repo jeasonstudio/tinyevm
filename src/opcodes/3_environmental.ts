@@ -66,13 +66,14 @@ export class CALLVALUE extends AOpcode {
 export class CALLDATALOAD extends AOpcode {
   async execute() {
     const pos = this.ctx.stack.pop();
-    if (pos > this.ctx.codeSize) {
-      this.ctx.stack.push(BigInt(0));
-      return;
-    }
+
     const i = Number(pos);
-    const loaded = this.ctx.code.slice(i, i + 64).padStart(64, '0');
-    this.ctx.stack.push(BigInt(add0x(loaded)));
+    const loaded = this.ctx.code.subarray(i, i + 32);
+    let r = bufferToBigInt(loaded);
+    if (loaded.length < 32) {
+      r = r << (BigInt(8) * BigInt(32 - loaded.length));
+    }
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);
@@ -82,7 +83,7 @@ export class CALLDATALOAD extends AOpcode {
 @opcode(0x36, 'CALLDATASIZE', 'calldataLength = calldatasize')
 export class CALLDATASIZE extends AOpcode {
   async execute() {
-    this.ctx.stack.push(this.ctx.codeSize);
+    this.ctx.stack.push(BigInt(this.ctx.codeSize));
   }
   async gasUsed() {
     return BigInt(0);
@@ -102,7 +103,7 @@ export class CALLDATACOPY extends AOpcode {
 @opcode(0x38, 'CODESIZE', 'myCodeLength = codesize')
 export class CODESIZE extends AOpcode {
   async execute() {
-    this.ctx.stack.push(this.ctx.codeSize);
+    this.ctx.stack.push(BigInt(this.ctx.codeSize));
   }
   async gasUsed() {
     return BigInt(0);
@@ -115,12 +116,12 @@ export class CODECOPY extends AOpcode {
     const [memOffset, codeOffset, dataLength] = this.ctx.stack.popN(3);
 
     if (dataLength !== BigInt(0)) {
-      const data = this.ctx.code.slice(
+      const data = this.ctx.code.subarray(
         Number(codeOffset),
         Number(codeOffset + dataLength)
       );
       const memOffsetNum = Number(memOffset);
-      this.ctx.memory.write(memOffsetNum, data);
+      this.ctx.memory.write(memOffsetNum, Number(dataLength), data);
     }
   }
   async gasUsed() {

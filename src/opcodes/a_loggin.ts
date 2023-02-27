@@ -2,6 +2,7 @@ import { AOpcode, opcode } from './common';
 
 const commonExecuteLog = async (self: AOpcode) => {
   const [memOffset, memLength] = self.ctx.stack.popN(2);
+  console.log('[tinyevm] LOG', memOffset, memLength);
 
   // const topicsCount = runState.opCode - 0xa0;
 

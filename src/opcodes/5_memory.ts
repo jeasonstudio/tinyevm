@@ -1,4 +1,9 @@
-import { Address } from '@ethereumjs/util';
+import {
+  Address,
+  bigIntToBuffer,
+  bufferToBigInt,
+  setLengthLeft,
+} from '@ethereumjs/util';
 import { add0x } from '../utils';
 import { AOpcode, opcode } from './common';
 
@@ -17,7 +22,7 @@ export class MLOAD extends AOpcode {
   async execute() {
     const pos = this.ctx.stack.pop();
     const word = this.ctx.memory.read(Number(pos), 32);
-    this.ctx.stack.push(BigInt(add0x(word)));
+    this.ctx.stack.push(bufferToBigInt(word));
   }
   async gasUsed() {
     return BigInt(0);
@@ -28,14 +33,16 @@ export class MLOAD extends AOpcode {
 export class MSTORE extends AOpcode {
   async execute() {
     const [offset, word] = this.ctx.stack.popN(2);
-    const targetValue = word.toString(16).padStart(32, '0');
-    this.ctx.memory.write(Number(offset), targetValue);
+    const buf = setLengthLeft(bigIntToBuffer(word), 32);
+    const offsetNum = Number(offset);
+    this.ctx.memory.write(offsetNum, 32, buf);
   }
   async gasUsed() {
-    const memDiff = this.ctx.memory.length - this.ctx.memory.prevLength;
-    if (memDiff > 0) {
-      return BigInt(3) + BigInt(memDiff);
-    }
+    // TODO
+    // const memDiff = this.ctx.memory.length - this.ctx.memory.prevLength;
+    // if (memDiff > 0) {
+    //   return BigInt(3) + BigInt(memDiff);
+    // }
     return BigInt(3);
   }
 }
@@ -86,7 +93,8 @@ export class JUMP extends AOpcode {
       dest <= this.ctx.codeSize,
       '[tinyevm] invalid jump destination'
     );
-    this.operationCounter = this.ctx.offsetOperationIndexMap[dest];
+
+    this.ctx.programCounter = dest;
   }
   async gasUsed() {
     return BigInt(0);
@@ -102,7 +110,7 @@ export class JUMPI extends AOpcode {
         dest <= this.ctx.codeSize,
         '[tinyevm] invalid jump destination'
       );
-      this.operationCounter = this.ctx.offsetOperationIndexMap[Number(dest)];
+      this.ctx.programCounter = Number(dest);
     }
   }
   async gasUsed() {
@@ -113,7 +121,7 @@ export class JUMPI extends AOpcode {
 @opcode(0x58, 'PC', 'programCounter = pc')
 export class PC extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'PC(0x58)' not implemented.`);
+    this.ctx.stack.push(BigInt(this.ctx.programCounter - 1))
   }
   async gasUsed() {
     return BigInt(0);

@@ -89,56 +89,31 @@ export const defaultEEI: IContextEEI = {
 };
 
 export class Context {
-  // 连续的内存空间 1024
-  public memory = new Memory(2 ** 10);
+  // 程序计数器
+  public programCounter: number = 0;
+  // 连续的内存空间
+  public memory = new Memory();
   // 固定大小的栈空间 1024
   public stack = new Stack(2 ** 10);
   // 返回值
-  public returnValue: string = '';
+  public returnValue: Buffer = Buffer.alloc(0);
   // 已经用过的 gas 数量
   public gasUsed = BigInt(0);
   // 交易
   public readonly tx!: Transaction;
   // code as string
-  public readonly code: string = '';
-  public readonly codeSize: bigint = BigInt(0);
+  public readonly code: Buffer = Buffer.alloc(0);
+  public readonly codeSize: number = 0;
   // gasLimit in tx
   public readonly gasLimit: bigint = BigInt(Number.MAX_SAFE_INTEGER);
-  // opcode list
-  public readonly operations: AOpcode[] = [];
-  // 程序计数器
-  public operationCounter = 0;
-  // map(offset => operationIndex)
-  public offsetOperationIndexMap: Record<number, number> = {};
   // Ethereum EVM Interface
   public readonly eei!: IContextEEI;
 
   public constructor(_tx: Transaction, _eei?: Partial<IContextEEI>) {
     this.tx = _tx;
-    this.code = _tx.data.toString('hex');
-    this.codeSize = BigInt(_tx.data.length);
+    this.code = _tx.data;
+    this.codeSize = _tx.data.length;
     this.gasLimit = _tx.gasLimit;
     this.eei = Object.assign({}, defaultEEI, _eei);
-
-    const asmOpcodes = asm.disassemble(_tx.data.toString('hex'));
-    const _offsetOperationIndexMap: Record<number, number> = {};
-    this.operations = asmOpcodes.map((item, index) => {
-      const opcodeLabel = item.opcode.mnemonic;
-      const OpcodeFactory = opcodeLabelMap[opcodeLabel] || UNIMPLEMENTED;
-      const operation = new OpcodeFactory(
-        this,
-        item.offset,
-        item.length,
-        item.pushValue ? BigInt(add0x(item.pushValue)) : undefined
-      );
-      if (!opcodeLabelMap[opcodeLabel]) {
-        operation.label = opcodeLabel;
-        operation.opcode = item.opcode.value;
-      }
-      _offsetOperationIndexMap[item.offset] = index;
-      return operation;
-    });
-    this.offsetOperationIndexMap = _offsetOperationIndexMap;
-    // console.log(this.codeSize, _offsetOperationIndexMap);
   }
 }

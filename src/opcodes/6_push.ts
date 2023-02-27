@@ -1,8 +1,19 @@
+import { bufferToBigInt } from '@ethereumjs/util';
 import { AOpcode, opcode } from './common';
 
 const commonExecute = async (self: AOpcode) => {
-  self.assert(self.pushValue !== undefined, '[tinyevm] pushValue is undefined');
-  self.ctx.stack.push(self.pushValue);
+  // Such as PUSH1: 0x60 - 0x5f = 0x01;
+  const numToPush = self.opcode - 0x5f;
+
+  const value = bufferToBigInt(
+    self.ctx.code.subarray(
+      self.ctx.programCounter,
+      self.ctx.programCounter + numToPush
+    )
+  );
+  self.ctx.stack.push(value);
+  // 额外的程序计数器变化
+  self.ctx.programCounter += numToPush;
 };
 
 @opcode(0x60, 'PUSH1')

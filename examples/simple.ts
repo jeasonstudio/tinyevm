@@ -1,5 +1,4 @@
 import { createTx, TinyEVM } from '../src';
-import { Transaction } from '@ethereumjs/tx';
 
 /*
   PUSH1 0x42
@@ -16,7 +15,7 @@ async function main() {
   const tx = createTx({ data: bytecode });
 
   const result = await tinyevm.runTx(tx);
-  console.log('returnValue', result.returnValue);
+  console.log('returnValue', result.returnValue.toString('hex'));
   // returnValue 00000000000000000000000000000042
   console.log('executionGasUsed', result.executionGasUsed.toString());
 }

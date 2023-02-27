@@ -48,7 +48,7 @@ async function main() {
   ]);
   console.log('tx.data', tx.data.toString('hex'));
   const result = await tinyevm.runTx(tx);
-  console.log('returnValue', result.returnValue);
+  console.log('returnValue', result.returnValue.toString('hex'));
   console.log('executionGasUsed', result.executionGasUsed.toString());
 }
 

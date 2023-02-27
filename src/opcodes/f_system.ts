@@ -38,7 +38,10 @@ export class CALLCODE extends AOpcode {
 export class RETURN extends AOpcode {
   async execute() {
     const [offset, length] = this.ctx.stack.popN(2);
-    this.ctx.returnValue = this.ctx.memory.read(Number(offset), Number(length));
+    this.ctx.returnValue =
+      length === BigInt(0)
+        ? Buffer.alloc(0)
+        : this.ctx.memory.read(Number(offset), Number(length));
   }
   async gasUsed() {
     return BigInt(0);
@@ -87,11 +90,11 @@ export class STATICCALL extends AOpcode {
 export class REVERT extends AOpcode {
   async execute() {
     const [offset, length] = this.ctx.stack.popN(2);
-    let returnData = '';
-    if (length !== BigInt(0)) {
-      returnData = this.ctx.memory.read(Number(offset), Number(length));
-    }
-    this.ctx.returnValue = returnData;
+    this.ctx.returnValue =
+      length === BigInt(0)
+        ? Buffer.alloc(0)
+        : this.ctx.memory.read(Number(offset), Number(length));
+
     // TODO?
     // throw new Error('[tinyevm] revert');
   }

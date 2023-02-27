@@ -12,11 +12,7 @@ export abstract class AOpcode {
   public constructor(
     readonly ctx: Context,
     // offset from operations(bytecode)
-    readonly offset: number,
-    // stack length
-    readonly length: number,
-    // push value for opcode
-    readonly pushValue?: bigint
+    readonly offset: number
   ) {}
   public abstract execute(): Promise<void>;
   public abstract gasUsed?(): Promise<bigint>;
@@ -40,12 +36,7 @@ export const opcode = (opcode: number, label: string, doc?: string) => {
       public static readonly valueOf = () => opcode;
       public opcode = opcode;
       public label = label;
-      public constructor(
-        readonly ctx: Context,
-        readonly offset: number,
-        readonly length: number,
-        readonly pushValue?: bigint
-      ) {
+      public constructor(readonly ctx: Context, readonly offset: number) {
         super();
       }
       protected debug = debug(`tinyevm:opcodes:${label.toLowerCase()}`);
@@ -63,12 +54,7 @@ export const opcode = (opcode: number, label: string, doc?: string) => {
         return gas || BigInt(0);
       }
       public toString() {
-        if (this.pushValue === undefined) {
-          return this.label.toUpperCase();
-        }
-        return `${this.label.toUpperCase()} ${add0x(
-          this.pushValue.toString(16)
-        )}`;
+        return this.label.toUpperCase();
       }
     }
     // 这里不需要返回类型
