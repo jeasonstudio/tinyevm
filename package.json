@@ -24,6 +24,7 @@
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/asm": "^5.7.0",
     "assert": "^2.0.0",
-    "debug": "^4.3.4"
+    "debug": "^4.3.4",
+    "ethereum-cryptography": "^1.2.0"
   }
 }

@@ -62,9 +62,10 @@ export class SLOAD extends AOpcode {
   async execute() {
     const key = this.ctx.stack.pop();
     const address = this.ctx.tx.to ?? Address.zero();
-    const keyStr = key.toString(16).padStart(32, '0');
-    const value = await this.ctx.eei.storageLoad(address, keyStr, false);
-    this.ctx.stack.push(BigInt(add0x(value)));
+    const keyBuf = setLengthLeft(bigIntToBuffer(key), 32);
+    const value = await this.ctx.eei.storageLoad(address, keyBuf, false);
+    const valueBigInt = value.length ? bufferToBigInt(value) : BigInt(0);
+    this.ctx.stack.push(valueBigInt);
   }
   async gasUsed() {
     return BigInt(0);
@@ -75,10 +76,10 @@ export class SLOAD extends AOpcode {
 export class SSTORE extends AOpcode {
   async execute() {
     const [key, val] = this.ctx.stack.popN(2);
-    const keyStr = key.toString(16).padStart(32, '0'); // setLengthLeft(bigIntToBuffer(key), 32);
     const address = this.ctx.tx.to ?? Address.zero();
-    let value = val === BigInt(0) ? '' : val.toString(16);
-    await this.ctx.eei.storageStore(address, keyStr, value);
+    const keyBuf = setLengthLeft(bigIntToBuffer(key), 32);
+    const value = val === BigInt(0) ? Buffer.from([]) : bigIntToBuffer(val);
+    await this.ctx.eei.storageStore(address, keyBuf, value);
   }
   async gasUsed() {
     return BigInt(0);
@@ -121,7 +122,7 @@ export class JUMPI extends AOpcode {
 @opcode(0x58, 'PC', 'programCounter = pc')
 export class PC extends AOpcode {
   async execute() {
-    this.ctx.stack.push(BigInt(this.ctx.programCounter - 1))
+    this.ctx.stack.push(BigInt(this.ctx.programCounter - 1));
   }
   async gasUsed() {
     return BigInt(0);

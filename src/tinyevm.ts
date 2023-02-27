@@ -43,7 +43,6 @@ export class TinyEVM implements ITinyEVMOpts {
 
     debug('stack', ctx.stack.toString());
 
-    const errors: Error[] = [];
     while (ctx.programCounter < ctx.codeSize) {
       const opcode = ctx.code[ctx.programCounter];
       assert(ctx.programCounter >= 0, '[tinyevm] invalid program counter');
@@ -52,22 +51,22 @@ export class TinyEVM implements ITinyEVMOpts {
       const Factory = opcodeValueMap[opcode] || UNIMPLEMENTED;
       const operation = new Factory(ctx, ctx.programCounter);
 
+      // 更新 counter
       ctx.programCounter += 1;
 
-      // try {
-      // 执行 opcode
-      await operation.execute();
-      // 计算 gas
-      ctx.gasUsed += operation.gasUsed ? await operation.gasUsed() : BigInt(0);
-      // 更新 counter
-      // } catch (err) {
-      //   const error = err as Error;
-      //   // 0x00
-      //   if (error.message === 'stop') {
-      //     throw error;
-      //   }
-      //   errors.push(error);
-      // }
+      try {
+        // 执行 opcode
+        await operation.execute();
+        // 计算 gas
+        // ctx.gasUsed += operation.gasUsed
+        //   ? await operation.gasUsed()
+        //   : BigInt(0);
+      } catch (err) {
+        const error = err as any;
+        error.programCounter = ctx.programCounter;
+        error.opcode = operation.toString();
+        throw error;
+      }
     }
 
     return {

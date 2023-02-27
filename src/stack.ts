@@ -4,7 +4,7 @@ import { MAX_INTEGER_BIGINT } from '@ethereumjs/util';
 // 一个简单的 Stack 结构
 export class Stack {
   private store: bigint[] = [];
-  private maxHeight: number = 2048;
+  private maxHeight: number = 2 ** 10; // 1024
 
   public constructor(_maxHeight?: number) {
     if (_maxHeight) this.maxHeight = _maxHeight;

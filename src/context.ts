@@ -29,12 +29,12 @@ import { add0x } from './utils';
 
 export interface IContextEEI {
   // getBlockHash(num: bigint): Promise<bigint>;
-  storageStore(address: Address, key: string, value: string): Promise<void>;
+  storageStore(address: Address, key: Buffer, value: Buffer): Promise<void>;
   storageLoad(
     address: Address,
-    key: string,
+    key: Buffer,
     original: boolean
-  ): Promise<string>;
+  ): Promise<Buffer>;
   // copy(): IContextEEI;
   // addWarmedAddress(address: Buffer): void;
   // isWarmedAddress(address: Buffer): boolean;
@@ -76,15 +76,17 @@ export interface IContextEEI {
   // hasStateRoot(root: Buffer): Promise<boolean>;
 }
 
-const storage: Record<PropertyKey, string> = {};
+const storage: Record<PropertyKey, Buffer> = {};
 
 export const defaultEEI: IContextEEI = {
   getAccount: async () => new Account(),
   storageStore: async (address, key, value) => {
-    storage[`${address.toString()}_${key}`] = value;
+    const keyStr = `${address.toString()}_${key.toString('hex')}`;
+    storage[keyStr] = value;
   },
   storageLoad: async (address, key, original) => {
-    return storage[`${address.toString()}_${key}`] || '';
+    const keyStr = `${address.toString()}_${key.toString('hex')}`;
+    return storage[keyStr] || Buffer.from([]);
   },
 };
 
@@ -93,16 +95,17 @@ export class Context {
   public programCounter: number = 0;
   // 连续的内存空间
   public memory = new Memory();
-  // 固定大小的栈空间 1024
-  public stack = new Stack(2 ** 10);
+  // 固定大小的栈空间
+  public stack = new Stack();
   // 返回值
   public returnValue: Buffer = Buffer.alloc(0);
   // 已经用过的 gas 数量
   public gasUsed = BigInt(0);
   // 交易
   public readonly tx!: Transaction;
-  // code as string
+  // code
   public readonly code: Buffer = Buffer.alloc(0);
+  // code size
   public readonly codeSize: number = 0;
   // gasLimit in tx
   public readonly gasLimit: bigint = BigInt(Number.MAX_SAFE_INTEGER);

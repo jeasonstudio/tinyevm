@@ -94,9 +94,7 @@ export class REVERT extends AOpcode {
       length === BigInt(0)
         ? Buffer.alloc(0)
         : this.ctx.memory.read(Number(offset), Number(length));
-
-    // TODO?
-    // throw new Error('[tinyevm] revert');
+    throw new Error('[tinyevm] revert');
   }
   async gasUsed() {
     return BigInt(0);

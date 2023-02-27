@@ -15,7 +15,9 @@ export class LT extends AOpcode {
 @opcode(0x11, 'GT', 'v = gt(a, b)')
 export class GT extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'GT(0x11)' not implemented.`);
+    const [a, b] = this.ctx.stack.popN(2);
+    const r = a > b ? BigInt(1) : BigInt(0);
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);
@@ -72,7 +74,9 @@ export class ISZERO extends AOpcode {
 @opcode(0x16, 'AND', 'v = and(a, b)')
 export class AND extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'AND(0x16)' not implemented.`);
+    const [a, b] = this.ctx.stack.popN(2);
+    const r = a & b;
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);
@@ -82,7 +86,9 @@ export class AND extends AOpcode {
 @opcode(0x17, 'OR', 'v = or(a, b)')
 export class OR extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'OR(0x17)' not implemented.`);
+    const [a, b] = this.ctx.stack.popN(2);
+    const r = a | b;
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);
@@ -92,7 +98,9 @@ export class OR extends AOpcode {
 @opcode(0x18, 'XOR', 'v = xor(a, b)')
 export class XOR extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'XOR(0x18)' not implemented.`);
+    const [a, b] = this.ctx.stack.popN(2);
+    const r = a ^ b;
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);
@@ -102,7 +110,9 @@ export class XOR extends AOpcode {
 @opcode(0x19, 'NOT', 'v = not(a, b)')
 export class NOT extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'NOT(0x19)' not implemented.`);
+    const a = this.ctx.stack.pop();
+    const r = BigInt.asUintN(256, ~a);
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);
@@ -112,7 +122,14 @@ export class NOT extends AOpcode {
 @opcode(0x1a, 'BYTE', 'v = byte(msbByteIndex, value)')
 export class BYTE extends AOpcode {
   async execute() {
-    throw new Error(`[tinyevm] opcode 'BYTE(0x1a)' not implemented.`);
+    const [pos, word] = this.ctx.stack.popN(2);
+    if (pos > BigInt(32)) {
+      this.ctx.stack.push(BigInt(0));
+      return;
+    }
+    // TODO: 暂时没看懂这里的逻辑
+    const r = (word >> ((BigInt(31) - pos) * BigInt(8))) & BigInt(0xff);
+    this.ctx.stack.push(r);
   }
   async gasUsed() {
     return BigInt(0);
