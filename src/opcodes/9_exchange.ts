@@ -4,6 +4,7 @@ const commonExecute = async (self: AOpcode) => {
   // SWAP1: 0x90 - 0x8f = 0x01
   const stackPos = self.opcode - 0x8f;
   self.ctx.stack.swap(stackPos);
+  self.debugOpcode();
 };
 
 @opcode(0x90, 'SWAP1')

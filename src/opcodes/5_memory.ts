@@ -11,6 +11,7 @@ import { AOpcode, opcode } from './common';
 export class POP extends AOpcode {
   async execute() {
     this.ctx.stack.pop();
+    this.debugOpcode();
   }
   async gasUsed() {
     return BigInt(0);
@@ -23,6 +24,7 @@ export class MLOAD extends AOpcode {
     const pos = this.ctx.stack.pop();
     const word = this.ctx.memory.read(Number(pos), 32);
     this.ctx.stack.push(bufferToBigInt(word));
+    this.debugOpcode(pos);
   }
   async gasUsed() {
     return BigInt(0);
@@ -36,6 +38,7 @@ export class MSTORE extends AOpcode {
     const buf = setLengthLeft(bigIntToBuffer(word), 32);
     const offsetNum = Number(offset);
     this.ctx.memory.write(offsetNum, 32, buf);
+    this.debugOpcode(offset, word);
   }
   async gasUsed() {
     // TODO
@@ -50,6 +53,7 @@ export class MSTORE extends AOpcode {
 @opcode(0x53, 'MSTORE8', 'mstore8(memoryByteIndex, valueOut [ & 0xff ])')
 export class MSTORE8 extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'MSTORE8(0x53)' not implemented.`);
   }
   async gasUsed() {
@@ -66,6 +70,7 @@ export class SLOAD extends AOpcode {
     const value = await this.ctx.eei.storageLoad(address, keyBuf, false);
     const valueBigInt = value.length ? bufferToBigInt(value) : BigInt(0);
     this.ctx.stack.push(valueBigInt);
+    this.debugOpcode(key);
   }
   async gasUsed() {
     return BigInt(0);
@@ -80,6 +85,7 @@ export class SSTORE extends AOpcode {
     const keyBuf = setLengthLeft(bigIntToBuffer(key), 32);
     const value = val === BigInt(0) ? Buffer.from([]) : bigIntToBuffer(val);
     await this.ctx.eei.storageStore(address, keyBuf, value);
+    this.debugOpcode(key, val);
   }
   async gasUsed() {
     return BigInt(0);
@@ -89,13 +95,15 @@ export class SSTORE extends AOpcode {
 @opcode(0x56, 'JUMP', 'jump(target)')
 export class JUMP extends AOpcode {
   async execute() {
-    const dest = Number(this.ctx.stack.pop());
+    const dest = this.ctx.stack.pop();
+    const destNum = Number(dest);
     this.assert(
       dest <= this.ctx.codeSize,
       '[tinyevm] invalid jump destination'
     );
 
-    this.ctx.programCounter = dest;
+    this.ctx.programCounter = destNum;
+    this.debugOpcode(dest);
   }
   async gasUsed() {
     return BigInt(0);
@@ -113,6 +121,7 @@ export class JUMPI extends AOpcode {
       );
       this.ctx.programCounter = Number(dest);
     }
+    this.debugOpcode(dest, cond);
   }
   async gasUsed() {
     return BigInt(0);
@@ -123,6 +132,7 @@ export class JUMPI extends AOpcode {
 export class PC extends AOpcode {
   async execute() {
     this.ctx.stack.push(BigInt(this.ctx.programCounter - 1));
+    this.debugOpcode();
   }
   async gasUsed() {
     return BigInt(0);
@@ -132,6 +142,7 @@ export class PC extends AOpcode {
 @opcode(0x59, 'MSIZE', 'currentMemorySize = msize')
 export class MSIZE extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'MSIZE(0x59)' not implemented.`);
   }
   async gasUsed() {
@@ -142,6 +153,7 @@ export class MSIZE extends AOpcode {
 @opcode(0x5a, 'GAS', 'remainingGas = gas')
 export class GAS extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'GAS(0x5a)' not implemented.`);
   }
   async gasUsed() {
@@ -152,6 +164,7 @@ export class GAS extends AOpcode {
 @opcode(0x5b, 'JUMPDEST', 'jumpdest')
 export class JUMPDEST extends AOpcode {
   async execute() {
+    this.debugOpcode();
     // DO NOTHING, JUST A JUMP FLAG
   }
   async gasUsed() {

@@ -3,7 +3,8 @@ import { AOpcode, opcode } from './common';
 @opcode(0xffff, 'UNIMPLEMENTED')
 export class UNIMPLEMENTED extends AOpcode {
   async execute() {
-    console.warn(
+    this.debugOpcode();
+    throw new Error(
       `[tinyevm] opcode not not found: '${this.label}(${this.opcode})'`
     );
   }

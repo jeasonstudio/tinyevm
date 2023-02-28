@@ -14,6 +14,7 @@ const commonExecute = async (self: AOpcode) => {
   self.ctx.stack.push(value);
   // 额外的程序计数器变化
   self.ctx.programCounter += numToPush;
+  self.debugOpcode(value);
 };
 
 async function gasUsed() {

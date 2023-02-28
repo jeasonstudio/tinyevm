@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { MAX_INTEGER_BIGINT } from '@ethereumjs/util';
+import { bigIntToBuffer, MAX_INTEGER_BIGINT } from '@ethereumjs/util';
+import { add0x } from './utils';
 
 // 一个简单的 Stack 结构
 export class Stack {
@@ -63,6 +64,9 @@ export class Stack {
   }
 
   public toString() {
-    return this.store.map((item) => item.toString(16)).join(',');
+    const formatBigInt = (val: bigint) =>
+      add0x(bigIntToBuffer(val).toString('hex'));
+    const reverseStack = [...this.store].reverse();
+    return `[${reverseStack.map(formatBigInt).join(',')}]`;
   }
 }

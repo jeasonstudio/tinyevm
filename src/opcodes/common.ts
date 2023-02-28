@@ -1,6 +1,8 @@
+import { bigIntToBuffer } from '@ethereumjs/util';
 import assert from 'assert';
 import debug from 'debug';
 import type { Context } from '../context';
+import { add0x } from '../utils';
 
 // 添加一个 Abstract Opcode 用于给被 opcode 装饰的类添加类型保护
 export abstract class AOpcode {
@@ -17,6 +19,7 @@ export abstract class AOpcode {
   public abstract gasUsed?(): Promise<bigint>;
   public assert!: typeof assert;
   public debug!: ReturnType<typeof debug>;
+  public debugOpcode!: (...argv: bigint[]) => void;
   [key: PropertyKey]: any;
 }
 
@@ -47,11 +50,20 @@ export const opcode = (opcode: number, label: string, doc?: string) => {
       public constructor(readonly ctx: Context, readonly offset: number) {
         super();
       }
-      protected debug = debug(`tinyevm:opcodes:${label.toLowerCase()}`);
+      protected debugOpcode = (...argv: bigint[]) => {
+        const formatBigInt = (arg: bigint) =>
+          add0x(bigIntToBuffer(arg).toString('hex'));
+        const offset = formatBigInt(BigInt(this.offset));
+        const args = argv.map(formatBigInt).join(', ');
+        const stackStr = this.ctx.stack.toString();
+        return debug('tinyevm:opcodes')(
+          `[${offset}] ${label.toUpperCase()}(${args}) ${stackStr}`
+        );
+      };
+      protected debug = debug('tinyevm:opcodes');
       protected assert = assert;
       public async execute(ctx: Context) {
         // TODO: before execute
-        this.debug(this.toString());
         await super.execute(ctx);
         // TODO: after execute
       }

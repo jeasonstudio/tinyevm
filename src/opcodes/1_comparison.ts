@@ -6,6 +6,7 @@ export class LT extends AOpcode {
     const [a, b] = this.ctx.stack.popN(2);
     const r = a < b ? BigInt(1) : BigInt(0);
     this.ctx.stack.push(r);
+    this.debugOpcode(a, b);
   }
   async gasUsed() {
     return BigInt(0);
@@ -18,6 +19,7 @@ export class GT extends AOpcode {
     const [a, b] = this.ctx.stack.popN(2);
     const r = a > b ? BigInt(1) : BigInt(0);
     this.ctx.stack.push(r);
+    this.debugOpcode(a, b);
   }
   async gasUsed() {
     return BigInt(0);
@@ -31,6 +33,7 @@ export class SLT extends AOpcode {
     const r =
       BigInt.asIntN(256, a) < BigInt.asIntN(256, b) ? BigInt(1) : BigInt(0);
     this.ctx.stack.push(r);
+    this.debugOpcode(a, b);
   }
   async gasUsed() {
     return BigInt(0);
@@ -40,6 +43,7 @@ export class SLT extends AOpcode {
 @opcode(0x13, 'SGT', 'v = sgt(a, b)')
 export class SGT extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'SGT(0x13)' not implemented.`);
   }
   async gasUsed() {
@@ -53,6 +57,7 @@ export class EQ extends AOpcode {
     const [a, b] = this.ctx.stack.popN(2);
     const r = a === b ? BigInt(1) : BigInt(0);
     this.ctx.stack.push(r);
+    this.debugOpcode(a, b);
   }
   async gasUsed() {
     return BigInt(0);
@@ -65,6 +70,7 @@ export class ISZERO extends AOpcode {
     const a = this.ctx.stack.pop();
     const r = a === BigInt(0) ? BigInt(1) : BigInt(0);
     this.ctx.stack.push(r);
+    this.debugOpcode(a);
   }
   async gasUsed() {
     return BigInt(0);
@@ -75,6 +81,7 @@ export class ISZERO extends AOpcode {
 export class AND extends AOpcode {
   async execute() {
     const [a, b] = this.ctx.stack.popN(2);
+    this.debugOpcode(a, b);
     const r = a & b;
     this.ctx.stack.push(r);
   }
@@ -89,6 +96,7 @@ export class OR extends AOpcode {
     const [a, b] = this.ctx.stack.popN(2);
     const r = a | b;
     this.ctx.stack.push(r);
+    this.debugOpcode(a, b);
   }
   async gasUsed() {
     return BigInt(0);
@@ -101,6 +109,7 @@ export class XOR extends AOpcode {
     const [a, b] = this.ctx.stack.popN(2);
     const r = a ^ b;
     this.ctx.stack.push(r);
+    this.debugOpcode(a, b);
   }
   async gasUsed() {
     return BigInt(0);
@@ -113,6 +122,7 @@ export class NOT extends AOpcode {
     const a = this.ctx.stack.pop();
     const r = BigInt.asUintN(256, ~a);
     this.ctx.stack.push(r);
+    this.debugOpcode(a);
   }
   async gasUsed() {
     return BigInt(0);
@@ -130,6 +140,7 @@ export class BYTE extends AOpcode {
     // TODO: 暂时没看懂这里的逻辑
     const r = (word >> ((BigInt(31) - pos) * BigInt(8))) & BigInt(0xff);
     this.ctx.stack.push(r);
+    this.debugOpcode(pos, word);
   }
   async gasUsed() {
     return BigInt(0);
@@ -139,6 +150,7 @@ export class BYTE extends AOpcode {
 @opcode(0x1b, 'SHL', 'v = shl(shiftBits, value)')
 export class SHL extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'SHL(0x1b)' not implemented.`);
   }
   async gasUsed() {
@@ -157,6 +169,7 @@ export class SHR extends AOpcode {
 
     const r = b >> a;
     this.ctx.stack.push(r);
+    this.debugOpcode(a, b);
   }
   async gasUsed() {
     return BigInt(0);
@@ -166,6 +179,7 @@ export class SHR extends AOpcode {
 @opcode(0x1d, 'SAR', 'v = sar(shiftBits, value)')
 export class SAR extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'SAR(0x1d)' not implemented.`);
   }
   async gasUsed() {

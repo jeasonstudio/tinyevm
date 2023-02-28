@@ -1,12 +1,30 @@
-import { Address, bufferToBigInt } from '@ethereumjs/util';
-import { add0x } from '../utils';
+import { Address, bufferToBigInt, setLengthLeft } from '@ethereumjs/util';
 import { AOpcode, opcode } from './common';
+
+function getDataSlice(data: Buffer, offset: bigint, length: bigint): Buffer {
+  const len = BigInt(data.length);
+  if (offset > len) {
+    offset = len;
+  }
+
+  let end = offset + length;
+  if (end > len) {
+    end = len;
+  }
+
+  data = data.subarray(Number(offset), Number(end));
+  // Right-pad with zeros to fill dataLength bytes
+  data = setLengthLeft(data, Number(length));
+
+  return data;
+}
 
 @opcode(0x30, 'ADDRESS', 'myAddr = address')
 export class ADDRESS extends AOpcode {
   async execute() {
     const address = this.ctx.tx.to ?? Address.zero();
     this.ctx.stack.push(bufferToBigInt(address.buf));
+    this.debugOpcode();
   }
   async gasUsed() {
     return BigInt(0);
@@ -22,6 +40,7 @@ export class BALANCE extends AOpcode {
     );
     const balance = (await this.ctx.eei.getAccount(address)).balance;
     this.ctx.stack.push(balance);
+    this.debugOpcode();
   }
   async gasUsed() {
     return BigInt(0);
@@ -35,6 +54,7 @@ export class ORIGIN extends AOpcode {
     // 但 TinyEVM 并没有合约之间调用的能力，所以这里直接返回 sender
     const sender = this.ctx.tx.getSenderAddress();
     this.ctx.stack.push(bufferToBigInt(sender.buf));
+    this.debugOpcode();
   }
   async gasUsed() {
     return BigInt(0);
@@ -46,6 +66,7 @@ export class CALLER extends AOpcode {
   async execute() {
     const sender = this.ctx.tx.getSenderAddress();
     this.ctx.stack.push(bufferToBigInt(sender.buf));
+    this.debugOpcode();
   }
   async gasUsed() {
     return BigInt(0);
@@ -56,6 +77,7 @@ export class CALLER extends AOpcode {
 export class CALLVALUE extends AOpcode {
   async execute() {
     this.ctx.stack.push(this.ctx.tx.value);
+    this.debugOpcode();
   }
   async gasUsed() {
     return BigInt(0);
@@ -66,14 +88,19 @@ export class CALLVALUE extends AOpcode {
 export class CALLDATALOAD extends AOpcode {
   async execute() {
     const pos = this.ctx.stack.pop();
-
-    const i = Number(pos);
-    const loaded = this.ctx.code.subarray(i, i + 32);
-    let r = bufferToBigInt(loaded);
-    if (loaded.length < 32) {
-      r = r << (BigInt(8) * BigInt(32 - loaded.length));
+    if (pos > this.ctx.data.length) {
+      this.ctx.stack.push(BigInt(0));
+    } else {
+      const i = Number(pos);
+      let loaded = this.ctx.data.subarray(i, i + 32);
+      loaded = loaded.length ? loaded : Buffer.from([0]);
+      let r = bufferToBigInt(loaded);
+      if (loaded.length < 32) {
+        r = r << (BigInt(8) * BigInt(32 - loaded.length));
+      }
+      this.ctx.stack.push(r);
     }
-    this.ctx.stack.push(r);
+    this.debugOpcode(pos);
   }
   async gasUsed() {
     return BigInt(0);
@@ -83,7 +110,8 @@ export class CALLDATALOAD extends AOpcode {
 @opcode(0x36, 'CALLDATASIZE', 'calldataLength = calldatasize')
 export class CALLDATASIZE extends AOpcode {
   async execute() {
-    this.ctx.stack.push(BigInt(this.ctx.codeSize));
+    this.ctx.stack.push(BigInt(this.ctx.data.length));
+    this.debugOpcode();
   }
   async gasUsed() {
     return BigInt(0);
@@ -93,6 +121,7 @@ export class CALLDATASIZE extends AOpcode {
 @opcode(0x37, 'CALLDATACOPY', 'calldatacopy(dstMemoryIndex, dataIndex, length)')
 export class CALLDATACOPY extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'CALLDATACOPY(0x37)' not implemented.`);
   }
   async gasUsed() {
@@ -104,6 +133,7 @@ export class CALLDATACOPY extends AOpcode {
 export class CODESIZE extends AOpcode {
   async execute() {
     this.ctx.stack.push(BigInt(this.ctx.codeSize));
+    this.debugOpcode();
   }
   async gasUsed() {
     return BigInt(0);
@@ -116,13 +146,12 @@ export class CODECOPY extends AOpcode {
     const [memOffset, codeOffset, dataLength] = this.ctx.stack.popN(3);
 
     if (dataLength !== BigInt(0)) {
-      const data = this.ctx.code.subarray(
-        Number(codeOffset),
-        Number(codeOffset + dataLength)
-      );
+      const data = getDataSlice(this.ctx.code, codeOffset, dataLength);
       const memOffsetNum = Number(memOffset);
-      this.ctx.memory.write(memOffsetNum, Number(dataLength), data);
+      const lengthNum = Number(dataLength);
+      this.ctx.memory.write(memOffsetNum, lengthNum, data);
     }
+    this.debugOpcode(memOffset, codeOffset, dataLength);
   }
   async gasUsed() {
     return BigInt(0);
@@ -132,6 +161,7 @@ export class CODECOPY extends AOpcode {
 @opcode(0x3a, 'GASPRICE', 'txGasPrice = gasprice')
 export class GASPRICE extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'GASPRICE(0x3a)' not implemented.`);
   }
   async gasUsed() {
@@ -142,6 +172,7 @@ export class GASPRICE extends AOpcode {
 @opcode(0x3b, 'EXTCODESIZE', 'otherCodeLength = extcodesize(address)')
 export class EXTCODESIZE extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'EXTCODESIZE(0x3b)' not implemented.`);
   }
   async gasUsed() {
@@ -156,6 +187,7 @@ export class EXTCODESIZE extends AOpcode {
 )
 export class EXTCODECOPY extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'EXTCODECOPY(0x3c)' not implemented.`);
   }
   async gasUsed() {
@@ -166,6 +198,7 @@ export class EXTCODECOPY extends AOpcode {
 @opcode(0x3d, 'RETURNDATASIZE', 'v = returndatasize')
 export class RETURNDATASIZE extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'RETURNDATASIZE(0x3d)' not implemented.`);
   }
   async gasUsed() {
@@ -180,6 +213,7 @@ export class RETURNDATASIZE extends AOpcode {
 )
 export class RETURNDATACOPY extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'RETURNDATACOPY(0x3e)' not implemented.`);
   }
   async gasUsed() {
@@ -190,6 +224,7 @@ export class RETURNDATACOPY extends AOpcode {
 @opcode(0x3f, 'EXTCODEHASH', 'hash = extcodehash(address)')
 export class EXTCODEHASH extends AOpcode {
   async execute() {
+    this.debugOpcode();
     throw new Error(`[tinyevm] opcode 'EXTCODEHASH(0x3f)' not implemented.`);
   }
   async gasUsed() {

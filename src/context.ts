@@ -1,10 +1,12 @@
 import { Transaction } from '@ethereumjs/tx';
-import { Account, Address } from '@ethereumjs/util';
+import {
+  Account,
+  Address,
+  bigIntToBuffer,
+  generateAddress,
+} from '@ethereumjs/util';
 import { Memory } from './memory';
-import { AOpcode, opcodeLabelMap, UNIMPLEMENTED } from './opcodes';
 import { Stack } from './stack';
-import * as asm from '@ethersproject/asm';
-import { add0x } from './utils';
 import { Storage } from './storage';
 
 // export interface RunState {
@@ -82,6 +84,8 @@ export const defaultEEI: Partial<IContextEEI> = {
 };
 
 export class Context {
+  // tx.to
+  public to: Address = Address.zero();
   // 程序计数器
   public programCounter: number = 0;
   // 连续的内存空间
@@ -96,6 +100,8 @@ export class Context {
   public gasUsed = BigInt(0);
   // 交易
   public readonly tx!: Transaction;
+  // data
+  public readonly data: Buffer = Buffer.from([0]);
   // code
   public readonly code: Buffer = Buffer.alloc(0);
   // code size
@@ -107,9 +113,19 @@ export class Context {
 
   public constructor(_tx: Transaction, _eei?: Partial<IContextEEI>) {
     this.tx = _tx;
-    this.code = _tx.data;
-    this.codeSize = _tx.data.length;
     this.gasLimit = _tx.gasLimit;
+    if (_tx.to) {
+      // tx.to 存在代表是一个合约调用
+      // TODO: not implemented
+      this.to = _tx.to;
+      throw new Error('not implemented');
+    } else {
+      // tx.to 不存在代表是一个合约部署
+      this.code = _tx.data;
+      this.codeSize = _tx.data.length;
+      this.data = Buffer.alloc(0);
+      this.to = Address.zero();
+    }
 
     const storageEEI: Pick<IContextEEI, 'storageLoad' | 'storageStore'> = {
       storageStore: async (address, key, value) => {
@@ -121,5 +137,13 @@ export class Context {
       },
     };
     this.eei = Object.assign({}, defaultEEI, storageEEI, _eei) as IContextEEI;
+  }
+
+  protected async generateAddress(): Promise<Address> {
+    const sender = this.tx.getSenderAddress();
+    const account = await this.eei.getAccount(sender);
+    const newNonce = account.nonce - BigInt(1);
+    const addr = generateAddress(sender.buf, bigIntToBuffer(newNonce));
+    return new Address(addr);
   }
 }

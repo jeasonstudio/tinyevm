@@ -12,6 +12,7 @@ export class SHA3 extends AOpcode {
     }
     const r = BigInt('0x' + bytesToHex(keccak256(data)));
     this.ctx.stack.push(r);
+    this.debugOpcode(offset, length);
   }
   async gasUsed() {
     return BigInt(0);

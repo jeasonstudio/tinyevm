@@ -65,7 +65,12 @@ export class TinyEVM implements ITinyEVMOpts {
         const error = err as any;
         error.programCounter = ctx.programCounter;
         error.opcode = operation.toString();
-        throw error;
+        if (error.message === 'RETURN') {
+          // normal return
+        } else {
+          throw error;
+        }
+        break;
       }
     }
 
