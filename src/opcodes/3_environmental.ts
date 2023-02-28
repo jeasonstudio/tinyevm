@@ -22,7 +22,7 @@ function getDataSlice(data: Buffer, offset: bigint, length: bigint): Buffer {
 @opcode(0x30, 'ADDRESS', 'myAddr = address')
 export class ADDRESS extends AOpcode {
   async execute() {
-    const address = this.ctx.tx.to ?? Address.zero();
+    const address = this.ctx.to ?? Address.zero();
     this.ctx.stack.push(bufferToBigInt(address.buf));
     this.debugOpcode();
   }
@@ -132,7 +132,7 @@ export class CALLDATACOPY extends AOpcode {
 @opcode(0x38, 'CODESIZE', 'myCodeLength = codesize')
 export class CODESIZE extends AOpcode {
   async execute() {
-    this.ctx.stack.push(BigInt(this.ctx.codeSize));
+    this.ctx.stack.push(BigInt(this.ctx.code.length));
     this.debugOpcode();
   }
   async gasUsed() {

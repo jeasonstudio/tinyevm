@@ -65,7 +65,7 @@ export class MSTORE8 extends AOpcode {
 export class SLOAD extends AOpcode {
   async execute() {
     const key = this.ctx.stack.pop();
-    const address = this.ctx.tx.to ?? Address.zero();
+    const address = this.ctx.to ?? Address.zero();
     const keyBuf = setLengthLeft(bigIntToBuffer(key), 32);
     const value = await this.ctx.eei.storageLoad(address, keyBuf, false);
     const valueBigInt = value.length ? bufferToBigInt(value) : BigInt(0);
@@ -81,7 +81,7 @@ export class SLOAD extends AOpcode {
 export class SSTORE extends AOpcode {
   async execute() {
     const [key, val] = this.ctx.stack.popN(2);
-    const address = this.ctx.tx.to ?? Address.zero();
+    const address = this.ctx.to ?? Address.zero();
     const keyBuf = setLengthLeft(bigIntToBuffer(key), 32);
     const value = val === BigInt(0) ? Buffer.from([]) : bigIntToBuffer(val);
     await this.ctx.eei.storageStore(address, keyBuf, value);
@@ -98,7 +98,7 @@ export class JUMP extends AOpcode {
     const dest = this.ctx.stack.pop();
     const destNum = Number(dest);
     this.assert(
-      dest <= this.ctx.codeSize,
+      dest <= this.ctx.code.length,
       '[tinyevm] invalid jump destination'
     );
 
@@ -116,7 +116,7 @@ export class JUMPI extends AOpcode {
     const [dest, cond] = this.ctx.stack.popN(2);
     if (cond !== BigInt(0)) {
       this.assert(
-        dest <= this.ctx.codeSize,
+        dest <= this.ctx.code.length,
         '[tinyevm] invalid jump destination'
       );
       this.ctx.programCounter = Number(dest);

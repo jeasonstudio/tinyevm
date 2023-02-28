@@ -1,5 +1,6 @@
 import { Address } from '@ethereumjs/util';
 import assert from 'assert';
+import { add0x } from './utils';
 
 export interface IStorage {
   // get value from storage
@@ -47,5 +48,25 @@ export class Storage implements IStorage {
 
   public clear(): void {
     this._storage = new Map();
+  }
+
+  public toString(address?: Address) {
+    const toStringAddress = (item: Map<string, Buffer>) => {
+      const keys = [...item.keys()];
+      return `{${keys
+        .map((k) => `slot(${add0x(k)})->${add0x(item.get(k)!.toString('hex'))}`)
+        .join(',')}}`;
+    };
+
+    if (address) {
+      const map = this._storage.get(address.toString());
+      if (!map) return '{}';
+      return toStringAddress(map);
+    }
+
+    const addresses = [...this._storage.keys()];
+    return `{${addresses.map(
+      (addr) => `address(${addr})->${toStringAddress(this._storage.get(addr)!)}`
+    )}}`;
   }
 }

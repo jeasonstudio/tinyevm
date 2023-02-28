@@ -92,8 +92,6 @@ export class Context {
   public memory = new Memory();
   // 固定大小的栈空间
   public stack = new Stack();
-  // 持久化的存储空间，目前用内存模拟
-  public storage = new Storage();
   // 返回值
   public returnValue: Buffer = Buffer.alloc(0);
   // 已经用过的 gas 数量
@@ -104,8 +102,6 @@ export class Context {
   public readonly data: Buffer = Buffer.from([0]);
   // code
   public readonly code: Buffer = Buffer.alloc(0);
-  // code size
-  public readonly codeSize: number = 0;
   // gasLimit in tx
   public readonly gasLimit: bigint = BigInt(Number.MAX_SAFE_INTEGER);
   // Ethereum EVM Interface
@@ -122,28 +118,16 @@ export class Context {
     } else {
       // tx.to 不存在代表是一个合约部署
       this.code = _tx.data;
-      this.codeSize = _tx.data.length;
       this.data = Buffer.alloc(0);
-      this.to = Address.zero();
     }
 
-    const storageEEI: Pick<IContextEEI, 'storageLoad' | 'storageStore'> = {
-      storageStore: async (address, key, value) => {
-        this.storage.put(address, key, value);
-      },
-      storageLoad: async (address, key, original) => {
-        const result = this.storage.get(address, key);
-        return result;
-      },
-    };
-    this.eei = Object.assign({}, defaultEEI, storageEEI, _eei) as IContextEEI;
+    this.eei = Object.assign({}, defaultEEI, _eei) as IContextEEI;
   }
 
-  protected async generateAddress(): Promise<Address> {
+  public async prepareToAddress() {
+    if (!this.to.isZero()) return;
     const sender = this.tx.getSenderAddress();
-    const account = await this.eei.getAccount(sender);
-    const newNonce = account.nonce - BigInt(1);
-    const addr = generateAddress(sender.buf, bigIntToBuffer(newNonce));
-    return new Address(addr);
+    const addr = generateAddress(sender.buf, bigIntToBuffer(this.tx.nonce));
+    this.to = new Address(addr);
   }
 }

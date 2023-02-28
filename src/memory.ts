@@ -1,5 +1,4 @@
 import assert from 'assert';
-import { add0x } from './utils';
 
 const ceil = (value: number, ceiling: number): number => {
   const r = value % ceiling;
@@ -63,6 +62,6 @@ export class Memory {
     return returnBuffer;
   }
   public toString() {
-    return add0x(this._store.toString('hex'));
+    return this._store.toString('hex');
   }
 }

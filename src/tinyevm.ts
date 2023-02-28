@@ -3,7 +3,10 @@ import { Chain, Common } from '@ethereumjs/common';
 import { Transaction } from '@ethereumjs/tx';
 import assert from 'assert';
 import { Context, IContextEEI } from './context';
+import { Memory } from './memory';
 import { opcodeValueMap, UNIMPLEMENTED } from './opcodes';
+import { Stack } from './stack';
+import { Storage } from './storage';
 
 const debug = require('debug')('tinyevm:core');
 
@@ -17,7 +20,9 @@ export interface ITinyEVMOpts {
 export interface IExecuteResult {
   executionGasUsed: bigint;
   returnValue: Buffer;
-  context: Context;
+  storage: Storage;
+  memory: Memory;
+  stack: Stack;
 }
 
 /**
@@ -26,6 +31,7 @@ export interface IExecuteResult {
 export class TinyEVM implements ITinyEVMOpts {
   public common = new Common({ chain: Chain.Mainnet });
   public blockHeader = BlockHeader.fromHeaderData({}, { common: this.common });
+  private storage = new Storage();
 
   // public events: AsyncEventEmitter<any> = new AsyncEventEmitter();
 
@@ -34,18 +40,34 @@ export class TinyEVM implements ITinyEVMOpts {
     Object.assign(this, opts);
   }
 
+  private getBuiltinEEI = (): Pick<
+    IContextEEI,
+    'storageLoad' | 'storageStore'
+  > => {
+    return {
+      storageStore: async (address, key, value) => {
+        this.storage.put(address, key, value);
+      },
+      storageLoad: async (address, key, original) => {
+        const result = this.storage.get(address, key);
+        return result;
+      },
+    };
+  };
+
   public async runTx(
     tx: Transaction,
     eei?: Partial<IContextEEI>
   ): Promise<IExecuteResult> {
     const code = tx.data.toString('hex');
     debug('runTx', code);
-    const ctx = new Context(tx, eei ?? {});
 
-    debug('stack', ctx.stack.toString());
+    // 初始化上下文 Context
+    const ctx = new Context(tx, Object.assign({}, this.getBuiltinEEI(), eei));
+    await ctx.prepareToAddress();
 
     // 程序运行
-    while (ctx.programCounter < ctx.codeSize) {
+    while (ctx.programCounter < ctx.code.length) {
       const opcode = ctx.code[ctx.programCounter];
       assert(ctx.programCounter >= 0, '[tinyevm] invalid program counter');
       assert(opcode !== undefined, '[tinyevm] invalid opcode');
@@ -77,7 +99,9 @@ export class TinyEVM implements ITinyEVMOpts {
     return {
       executionGasUsed: ctx.gasUsed,
       returnValue: ctx.returnValue,
-      context: ctx,
+      storage: this.storage,
+      memory: ctx.memory,
+      stack: ctx.stack,
     };
   }
 }

@@ -13,9 +13,9 @@ export const runOpcodes = async (opcodes: Array<string | Opcode>) => {
 
   return {
     returnValue: result.returnValue,
-    stack: result.context.stack,
-    memory: result.context.memory,
-    // storage: result.context.storage,
+    stack: result.stack,
+    memory: result.memory,
+    storage: result.storage,
     gas: result.executionGasUsed,
   };
 };
