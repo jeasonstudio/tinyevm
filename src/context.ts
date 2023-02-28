@@ -5,6 +5,7 @@ import { AOpcode, opcodeLabelMap, UNIMPLEMENTED } from './opcodes';
 import { Stack } from './stack';
 import * as asm from '@ethersproject/asm';
 import { add0x } from './utils';
+import { Storage } from './storage';
 
 // export interface RunState {
 //   programCounter: number
@@ -76,18 +77,8 @@ export interface IContextEEI {
   // hasStateRoot(root: Buffer): Promise<boolean>;
 }
 
-const storage: Record<PropertyKey, Buffer> = {};
-
-export const defaultEEI: IContextEEI = {
+export const defaultEEI: Partial<IContextEEI> = {
   getAccount: async () => new Account(),
-  storageStore: async (address, key, value) => {
-    const keyStr = `${address.toString()}_${key.toString('hex')}`;
-    storage[keyStr] = value;
-  },
-  storageLoad: async (address, key, original) => {
-    const keyStr = `${address.toString()}_${key.toString('hex')}`;
-    return storage[keyStr] || Buffer.from([]);
-  },
 };
 
 export class Context {
@@ -97,6 +88,8 @@ export class Context {
   public memory = new Memory();
   // 固定大小的栈空间
   public stack = new Stack();
+  // 持久化的存储空间，目前用内存模拟
+  public storage = new Storage();
   // 返回值
   public returnValue: Buffer = Buffer.alloc(0);
   // 已经用过的 gas 数量
@@ -117,6 +110,16 @@ export class Context {
     this.code = _tx.data;
     this.codeSize = _tx.data.length;
     this.gasLimit = _tx.gasLimit;
-    this.eei = Object.assign({}, defaultEEI, _eei);
+
+    const storageEEI: Pick<IContextEEI, 'storageLoad' | 'storageStore'> = {
+      storageStore: async (address, key, value) => {
+        this.storage.put(address, key, value);
+      },
+      storageLoad: async (address, key, original) => {
+        const result = this.storage.get(address, key);
+        return result;
+      },
+    };
+    this.eei = Object.assign({}, defaultEEI, storageEEI, _eei) as IContextEEI;
   }
 }
