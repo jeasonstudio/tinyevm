@@ -17,6 +17,7 @@ export interface ITinyEVMOpts {
 export interface IExecuteResult {
   executionGasUsed: bigint;
   returnValue: Buffer;
+  context: Context;
 }
 
 /**
@@ -59,9 +60,7 @@ export class TinyEVM implements ITinyEVMOpts {
         // 执行 opcode
         await operation.execute();
         // 计算 gas
-        // ctx.gasUsed += operation.gasUsed
-        //   ? await operation.gasUsed()
-        //   : BigInt(0);
+        ctx.gasUsed += await operation.gasUsed();
       } catch (err) {
         const error = err as any;
         error.programCounter = ctx.programCounter;
@@ -73,6 +72,7 @@ export class TinyEVM implements ITinyEVMOpts {
     return {
       executionGasUsed: ctx.gasUsed,
       returnValue: ctx.returnValue,
+      context: ctx,
     };
   }
 }
