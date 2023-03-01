@@ -66,7 +66,7 @@ export class TinyEVM implements ITinyEVMOpts {
 
     // 初始化上下文 Context
     const ctx = new Context(tx, Object.assign({}, this.getBuiltinEEI(), eei));
-    await ctx.prepareToAddress();
+    await ctx.prepare();
 
     // 程序运行
     while (ctx.programCounter < ctx.code.length) {
@@ -77,7 +77,7 @@ export class TinyEVM implements ITinyEVMOpts {
       const Factory = opcodeValueMap[opcode] || UNIMPLEMENTED;
       const operation = new Factory(ctx, ctx.programCounter);
 
-      // 更新 counter
+      // 更新 program counter
       ctx.programCounter += 1;
 
       try {
@@ -90,7 +90,9 @@ export class TinyEVM implements ITinyEVMOpts {
         error.programCounter = ctx.programCounter;
         error.opcode = operation.toString();
         if (error.message === 'RETURN') {
-          // normal return
+          // 正常的 RETURN Opcode，不应该抛出错误
+        } else if (error.message === 'STOP') {
+          // 正常的 STOP Opcode，不应该抛出错误
         } else {
           throw error;
         }

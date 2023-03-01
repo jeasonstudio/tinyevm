@@ -42,6 +42,15 @@ export const createDeployTxData = (
   return deployData;
 };
 
+export const createCallTxData = (
+  abi: any[],
+  method: string,
+  params?: any[]
+) => {
+  const contract = new Interface(abi);
+  return contract.encodeFunctionData(method, params);
+};
+
 export const opcode2bytecode = (opcodes: Array<string | Opcode>) => {
   let bytecode = '';
   for (const opcode of opcodes) {

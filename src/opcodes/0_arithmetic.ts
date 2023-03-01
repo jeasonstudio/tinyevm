@@ -13,7 +13,7 @@ function toTwos(a: bigint) {
 export class STOP extends AOpcode {
   async execute() {
     this.debugOpcode();
-    throw new Error('stop');
+    throw new Error('STOP');
   }
   async gasUsed() {
     return BigInt(0);

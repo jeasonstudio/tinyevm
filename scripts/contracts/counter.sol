@@ -10,8 +10,8 @@ contract Counter {
     }
 
     // Function to increment count by 1
-    function inc() public {
-        count += 1;
+    function inc(uint256 n) public {
+        count += n;
     }
 
     // Function to decrement count by 1

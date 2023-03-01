@@ -99,9 +99,9 @@ export class Context {
   // 交易
   public readonly tx!: Transaction;
   // data
-  public readonly data: Buffer = Buffer.from([0]);
+  public data: Buffer = Buffer.from([0]);
   // code
-  public readonly code: Buffer = Buffer.alloc(0);
+  public code: Buffer = Buffer.alloc(0);
   // gasLimit in tx
   public readonly gasLimit: bigint = BigInt(Number.MAX_SAFE_INTEGER);
   // Ethereum EVM Interface
@@ -115,7 +115,7 @@ export class Context {
       // tx.to 存在代表是一个合约调用
       // TODO: not implemented
       this.to = _tx.to;
-      throw new Error('not implemented');
+      this.data = _tx.data;
     } else {
       // tx.to 不存在代表是一个合约部署
       this.code = _tx.data;
@@ -125,7 +125,21 @@ export class Context {
     this.eei = Object.assign({}, defaultEEI, _eei) as IContextEEI;
   }
 
-  public async prepareToAddress() {
+  public async prepare() {
+    await this.prepareToAddress();
+    await this.prepareCode();
+  }
+
+  private async prepareCode() {
+    if (!this.to.isZero()) {
+      const code = await this.eei.getContractCode(this.to);
+      if (code.length) {
+        this.code = code;
+      }
+    }
+  }
+
+  private async prepareToAddress() {
     if (!this.to.isZero()) return;
     const sender = this.tx.getSenderAddress();
     const addr = generateAddress(sender.buf, bigIntToBuffer(this.tx.nonce));
