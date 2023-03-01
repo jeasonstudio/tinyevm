@@ -1,4 +1,4 @@
-import { createDeployContractTx, TinyEVM } from '../src';
+import { createAccount, createDeployTxData, createTx, TinyEVM } from '../src';
 
 /*
 // SPDX-License-Identifier: MIT
@@ -13,8 +13,11 @@ const contractBytecode =
 
 async function main() {
   const tinyevm = new TinyEVM();
-  const tx = createDeployContractTx(contractABI, contractBytecode, []);
-  console.log('tx.data', tx.data.toString('hex'));
+
+  const { privateKey } = createAccount('7777');
+  const data = createDeployTxData(contractABI, contractBytecode, []);
+  const tx = createTx({ data }).sign(privateKey);
+
   const result = await tinyevm.runTx(tx);
   console.log('returnValue', result.returnValue.toString('hex'));
   console.log('executionGasUsed', result.executionGasUsed.toString());

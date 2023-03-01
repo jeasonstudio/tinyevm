@@ -1,6 +1,7 @@
 import { BlockHeader } from '@ethereumjs/block';
 import { Chain, Common } from '@ethereumjs/common';
 import { Transaction } from '@ethereumjs/tx';
+import { Address } from '@ethereumjs/util';
 import assert from 'assert';
 import { Context, IContextEEI } from './context';
 import { Memory } from './memory';
@@ -23,6 +24,7 @@ export interface IExecuteResult {
   storage: Storage;
   memory: Memory;
   stack: Stack;
+  to: Address;
 }
 
 /**
@@ -102,6 +104,7 @@ export class TinyEVM implements ITinyEVMOpts {
       storage: this.storage,
       memory: ctx.memory,
       stack: ctx.stack,
+      to: ctx.to,
     };
   }
 }

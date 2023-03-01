@@ -7,7 +7,6 @@ import {
 } from '@ethereumjs/util';
 import { Memory } from './memory';
 import { Stack } from './stack';
-import { Storage } from './storage';
 
 // export interface RunState {
 //   programCounter: number
@@ -61,7 +60,7 @@ export interface IContextEEI {
   //   accountFields: AccountFields
   // ): Promise<void>;
   // putContractCode(address: Address, value: Buffer): Promise<void>;
-  // getContractCode(address: Address): Promise<Buffer>;
+  getContractCode(address: Address): Promise<Buffer>;
   // getContractStorage(address: Address, key: Buffer): Promise<Buffer>;
   // putContractStorage(
   //   address: Address,
@@ -81,6 +80,7 @@ export interface IContextEEI {
 
 export const defaultEEI: Partial<IContextEEI> = {
   getAccount: async () => new Account(),
+  getContractCode: async () => Buffer.alloc(0),
 };
 
 export class Context {
@@ -107,6 +107,7 @@ export class Context {
   // Ethereum EVM Interface
   public readonly eei!: IContextEEI;
 
+  // 构造函数
   public constructor(_tx: Transaction, _eei?: Partial<IContextEEI>) {
     this.tx = _tx;
     this.gasLimit = _tx.gasLimit;
