@@ -3,58 +3,48 @@ import { generatePrivateKey, TinyEVM } from '../../src';
 import abi from './abi';
 import bytecode from './bytecode';
 
-const privateKey = generatePrivateKey('7777');
+const privateKey = generatePrivateKey('01');
 const owner = Address.fromPrivateKey(privateKey);
-const user1 = Address.fromPrivateKey(generatePrivateKey('8888'));
+const user1 = Address.fromPrivateKey(generatePrivateKey('02'));
 
 async function main() {
   const tinyevm = new TinyEVM();
+  const deployParams = { privateKey, abi, bytecode };
 
-  const { contractAddress } = await tinyevm.deployContract({
-    privateKey,
-    abi,
-    bytecode,
-  });
+  const { contractAddress } = await tinyevm.deployContract(deployParams);
+  console.log('contract address:', contractAddress.toString());
 
-  console.log('deploy address:', contractAddress.toString());
-
-  const { parsedReturnValue: mintResult } = await tinyevm.callContract({
-    privateKey,
-    abi,
+  const callParams = { privateKey, abi, contractAddress };
+  // Mint 100 Token
+  await tinyevm.callContract({
+    ...callParams,
     method: 'mint',
     methodArgv: [100],
-    contractAddress,
   });
-
-  console.log('call mint():', mintResult);
-
+  // transfer 30 Token to user1
   const { parsedReturnValue: transferResult } = await tinyevm.callContract({
-    privateKey,
-    abi,
+    ...callParams,
     method: 'transfer',
     methodArgv: [user1.toString(), 30],
-    contractAddress,
   });
-  console.log('call transfer(user1, 30):', transferResult);
+  console.log('call transfer(user1, 30):', transferResult); // => [true]
 
+  // Balance Of Owner
   const { parsedReturnValue: balanceOfResult } = await tinyevm.callContract({
-    privateKey,
-    abi,
+    ...callParams,
     method: 'balanceOf',
     methodArgv: [owner.toString()],
-    contractAddress,
   });
-  console.log('call balanceOf(owner):', balanceOfResult);
+  console.log('call balanceOf(owner):', balanceOfResult); // => [0x46]
 
+  // Balance Of User1
   const { parsedReturnValue: balanceOfUser1Result } =
     await tinyevm.callContract({
-      privateKey,
-      abi,
+      ...callParams,
       method: 'balanceOf',
       methodArgv: [user1.toString()],
-      contractAddress,
     });
-  console.log('call balanceOf(user1):', balanceOfUser1Result);
+  console.log('call balanceOf(user1):', balanceOfUser1Result); // => [0x1e]
 }
 
 main().catch(console.error);
