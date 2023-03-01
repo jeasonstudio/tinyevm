@@ -69,8 +69,13 @@ export const opcode2bytecode = (opcodes: Array<string | Opcode>) => {
   return add0x(bytecode);
 };
 
-export const createAccount = (key?: string | number) => {
+export const generatePrivateKey = (key?: string | number) => {
   const privateKey = Buffer.from(String(key ?? '').padStart(64, '0'), 'hex');
+  return privateKey;
+};
+
+export const createAccount = (key?: string | number) => {
+  const privateKey = generatePrivateKey(key);
   const publicKey = privateToPublic(privateKey);
   debug('createAccount publicKey:', publicKey.toString('hex'));
   debug('createAccount privateKey:', privateKey.toString('hex'));
@@ -81,4 +86,21 @@ export const createAccount = (key?: string | number) => {
     balance: BigInt(0),
   });
   return { publicKey, privateKey, address, account };
+};
+
+/**
+ * 根据 abi 解析 returnValue
+ * @param abi contract abi
+ * @param method method name
+ * @param returnValue return value
+ * @returns result list
+ */
+export const decodeReturnValue = (
+  abi: any[],
+  method: string,
+  returnValue: Buffer
+) => {
+  const contract = new Interface(abi);
+  const result = contract.decodeFunctionResult(method, returnValue);
+  return result;
 };

@@ -117,7 +117,6 @@ export class Context {
     this.gasLimit = _tx.gasLimit;
     if (_tx.to) {
       // tx.to 存在代表是一个合约调用
-      // TODO: not implemented
       this.to = _tx.to;
       this.data = _tx.data;
     } else {

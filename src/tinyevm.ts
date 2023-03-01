@@ -1,13 +1,19 @@
 import { BlockHeader } from '@ethereumjs/block';
 import { Chain, Common } from '@ethereumjs/common';
-import { Transaction } from '@ethereumjs/tx';
+import { Transaction, TxData } from '@ethereumjs/tx';
 import { Address } from '@ethereumjs/util';
 import assert from 'assert';
-import { Context, IContextEEI } from './context';
+import { Context, IContextEEI, Log } from './context';
 import { Memory } from './memory';
 import { opcodeValueMap, UNIMPLEMENTED } from './opcodes';
 import { Stack } from './stack';
 import { Storage } from './storage';
+import {
+  createCallTxData,
+  createDeployTxData,
+  createTx,
+  decodeReturnValue,
+} from './utils';
 
 const debug = require('debug')('tinyevm:core');
 
@@ -18,13 +24,42 @@ export interface ITinyEVMOpts {
   blockHeader?: BlockHeader;
 }
 
-export interface IExecuteResult {
-  executionGasUsed: bigint;
-  returnValue: Buffer;
+export interface IExecResultBase extends Record<PropertyKey, any> {
   storage: Storage;
   memory: Memory;
   stack: Stack;
+  returnValue: Buffer;
+  logs: Log[];
+  executionGasUsed: bigint;
+}
+
+export interface IRunTxResult extends IExecResultBase {
   to: Address;
+}
+
+export interface IDeployContractParams {
+  privateKey: Buffer;
+  bytecode: string;
+  abi?: any[];
+  deployArgv?: any[];
+  txData?: TxData;
+}
+
+export interface IDeployContractResult extends IExecResultBase {
+  contractAddress: Address;
+}
+
+export interface ICallContractParams {
+  contractAddress: Address;
+  privateKey: Buffer;
+  abi: any[];
+  method: string;
+  methodArgv?: any[];
+  txData?: TxData;
+}
+
+export interface ICallContractResult extends IExecResultBase {
+  parsedReturnValue: ReadonlyArray<any>;
 }
 
 /**
@@ -35,6 +70,9 @@ export class TinyEVM implements ITinyEVMOpts {
   public blockHeader = BlockHeader.fromHeaderData({}, { common: this.common });
   private storage = new Storage();
 
+  // mapping(address -> code)
+  private contracts = new Map<string, Buffer>();
+
   // public events: AsyncEventEmitter<any> = new AsyncEventEmitter();
 
   public constructor(protected opts?: ITinyEVMOpts) {
@@ -44,7 +82,7 @@ export class TinyEVM implements ITinyEVMOpts {
 
   private getBuiltinEEI = (): Pick<
     IContextEEI,
-    'storageLoad' | 'storageStore'
+    'storageLoad' | 'storageStore' | 'getContractCode'
   > => {
     return {
       storageStore: async (address, key, value) => {
@@ -54,13 +92,17 @@ export class TinyEVM implements ITinyEVMOpts {
         const result = this.storage.get(address, key);
         return result;
       },
+      getContractCode: async (address) => {
+        const code = this.contracts.get(address.toString()) || Buffer.alloc(0);
+        return code;
+      },
     };
   };
 
   public async runTx(
     tx: Transaction,
     eei?: Partial<IContextEEI>
-  ): Promise<IExecuteResult> {
+  ): Promise<IRunTxResult> {
     const code = tx.data.toString('hex');
     debug('runTx', code);
 
@@ -107,6 +149,70 @@ export class TinyEVM implements ITinyEVMOpts {
       memory: ctx.memory,
       stack: ctx.stack,
       to: ctx.to,
+      logs: ctx.logs,
+    };
+  }
+
+  /**
+   * 部署合约：对 runTx 的高级封装
+   * @param params deploy params
+   * @returns result
+   */
+  public async deployContract(
+    params: IDeployContractParams
+  ): Promise<IDeployContractResult> {
+    const { privateKey, abi = [], bytecode, deployArgv = [], txData } = params;
+    const from = Address.fromPrivateKey(privateKey);
+    debug('deployContract from', from.toString());
+
+    const data = createDeployTxData(abi, bytecode, deployArgv);
+    const tx = createTx({ ...txData, data }).sign(privateKey);
+
+    const result = await this.runTx(tx);
+    const contractCode = result.returnValue;
+    const contractAddress = result.to;
+
+    this.contracts.set(contractAddress.toString(), contractCode);
+    return {
+      ...result,
+      contractAddress,
+    };
+  }
+
+  /**
+   * 调用合约：对 runTx 的高级封装
+   * @param params call contract params
+   * @returns result
+   */
+  public async callContract(
+    params: ICallContractParams
+  ): Promise<ICallContractResult> {
+    const {
+      privateKey,
+      abi = [],
+      method,
+      methodArgv = [],
+      txData,
+      contractAddress,
+    } = params;
+    const from = Address.fromPrivateKey(privateKey);
+    debug('callContract from', from.toString());
+    debug('callContract address', contractAddress.toString());
+
+    const data = createCallTxData(abi, method, methodArgv);
+    const tx = createTx({ ...txData, data, to: contractAddress }).sign(
+      privateKey
+    );
+
+    const result = await this.runTx(tx);
+    const parsedReturnValue = decodeReturnValue(
+      abi,
+      method,
+      result.returnValue
+    );
+    return {
+      ...result,
+      parsedReturnValue,
     };
   }
 }

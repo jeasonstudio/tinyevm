@@ -1,50 +1,60 @@
-import {
-  createAccount,
-  createCallTxData,
-  createDeployTxData,
-  createTx,
-  TinyEVM,
-} from '../../src';
+import { Address } from '@ethereumjs/util';
+import { generatePrivateKey, TinyEVM } from '../../src';
 import abi from './abi';
 import bytecode from './bytecode';
 
+const privateKey = generatePrivateKey('7777');
+const owner = Address.fromPrivateKey(privateKey);
+const user1 = Address.fromPrivateKey(generatePrivateKey('8888'));
+
 async function main() {
   const tinyevm = new TinyEVM();
-  const { privateKey, address } = createAccount('7777');
-  const deployTx = createTx({
-    data: createDeployTxData(abi, bytecode, []),
-  }).sign(privateKey);
-  const deployResult = await tinyevm.runTx(deployTx);
-  const contractCode = deployResult.returnValue;
-  const contractAddress = deployResult.to;
 
-  // console.log('Deploy Contract:', contractCode.toString('hex'));
-  console.log('Contract Address:', contractAddress.toString());
-  console.log('storage', deployResult.storage.toString());
-
-  const mintTx = createTx({
-    data: createCallTxData(abi, 'mint', [100]),
-    to: contractAddress,
-  }).sign(privateKey);
-
-  const mintResult = await tinyevm.runTx(mintTx, {
-    async getContractCode() {
-      return contractCode;
-    },
+  const { contractAddress } = await tinyevm.deployContract({
+    privateKey,
+    abi,
+    bytecode,
   });
-  console.log('mint Result:', mintResult.returnValue.toString('hex'));
 
-  const balanceOfTx = createTx({
-    data: createCallTxData(abi, 'balanceOf', [address.toString()]),
-    to: contractAddress,
-  }).sign(privateKey);
+  console.log('deploy address:', contractAddress.toString());
 
-  const balanceOfResult = await tinyevm.runTx(balanceOfTx, {
-    async getContractCode() {
-      return contractCode;
-    },
+  const { parsedReturnValue: mintResult } = await tinyevm.callContract({
+    privateKey,
+    abi,
+    method: 'mint',
+    methodArgv: [100],
+    contractAddress,
   });
-  console.log('balanceOf Result:', balanceOfResult.returnValue.toString('hex'));
+
+  console.log('call mint():', mintResult);
+
+  const { parsedReturnValue: transferResult } = await tinyevm.callContract({
+    privateKey,
+    abi,
+    method: 'transfer',
+    methodArgv: [user1.toString(), 30],
+    contractAddress,
+  });
+  console.log('call transfer(user1, 30):', transferResult);
+
+  const { parsedReturnValue: balanceOfResult } = await tinyevm.callContract({
+    privateKey,
+    abi,
+    method: 'balanceOf',
+    methodArgv: [owner.toString()],
+    contractAddress,
+  });
+  console.log('call balanceOf(owner):', balanceOfResult);
+
+  const { parsedReturnValue: balanceOfUser1Result } =
+    await tinyevm.callContract({
+      privateKey,
+      abi,
+      method: 'balanceOf',
+      methodArgv: [user1.toString()],
+      contractAddress,
+    });
+  console.log('call balanceOf(user1):', balanceOfUser1Result);
 }
 
 main().catch(console.error);
