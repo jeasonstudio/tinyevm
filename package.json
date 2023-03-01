@@ -1,9 +1,12 @@
 {
   "name": "tinyevm",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Tiny TypeScript implementation of the Ethereum EVM.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "typings": "dist/index.d.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "test": "jest",
     "test:watch": "jest --watch"
   },
