@@ -83,6 +83,8 @@ export const defaultEEI: Partial<IContextEEI> = {
   getContractCode: async () => Buffer.alloc(0),
 };
 
+export type Log = [address: Buffer, topics: Buffer[], data: Buffer];
+
 export class Context {
   // tx.to
   public to: Address = Address.zero();
@@ -94,6 +96,8 @@ export class Context {
   public stack = new Stack();
   // 返回值
   public returnValue: Buffer = Buffer.alloc(0);
+  // Log
+  public logs: Log[] = [];
   // 已经用过的 gas 数量
   public gasUsed = BigInt(0);
   // 交易

@@ -1,23 +1,22 @@
+import { bigIntToBuffer, setLengthLeft } from '@ethereumjs/util';
 import { AOpcode, opcode } from './common';
 
 const commonExecuteLog = async (self: AOpcode) => {
   const [memOffset, memLength] = self.ctx.stack.popN(2);
-  console.log('[tinyevm] LOG', memOffset, memLength);
-  self.debugOpcode(memOffset, memLength);
+  const topicsCount = self.opcode - 0xa0;
 
-  // const topicsCount = runState.opCode - 0xa0;
+  const topics = self.ctx.stack.popN(topicsCount);
+  const topicsBuf = topics.map(function (a: bigint) {
+    return setLengthLeft(bigIntToBuffer(a), 32);
+  });
 
-  // const topics = runState.stack.popN(topicsCount);
-  // const topicsBuf = topics.map(function (a: bigint) {
-  //   return setLengthLeft(bigIntToBuffer(a), 32);
-  // });
+  let mem = Buffer.alloc(0);
+  if (memLength !== BigInt(0)) {
+    mem = self.ctx.memory.read(Number(memOffset), Number(memLength));
+  }
 
-  // let mem = Buffer.alloc(0);
-  // if (memLength !== BigInt(0)) {
-  //   mem = runState.memory.read(Number(memOffset), Number(memLength));
-  // }
-
-  // runState.interpreter.log(mem, topicsCount, topicsBuf);
+  self.ctx.logs.push([self.ctx.to.buf, topicsBuf, mem]);
+  self.debugOpcode(memOffset, memLength, ...topics);
 };
 
 @opcode(0xa0, 'LOG0')

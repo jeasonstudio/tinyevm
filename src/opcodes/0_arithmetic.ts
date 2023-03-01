@@ -9,6 +9,22 @@ function toTwos(a: bigint) {
   return BigInt.asUintN(256, a);
 }
 
+const N =
+  BigInt(
+    115792089237316195423570985008687907853269984665640564039457584007913129639936
+  );
+function exponentiation(bas: bigint, exp: bigint) {
+  let t = BigInt(1);
+  while (exp > BigInt(0)) {
+    if (exp % BigInt(2) !== BigInt(0)) {
+      t = (t * bas) % N;
+    }
+    bas = (bas * bas) % N;
+    exp = exp / BigInt(2);
+  }
+  return t;
+}
+
 @opcode(0x00, 'STOP', 'stop')
 export class STOP extends AOpcode {
   async execute() {
@@ -170,8 +186,16 @@ export class MULMOD extends AOpcode {
 @opcode(0x0a, 'EXP', 'v = exp(base, exponent)')
 export class EXP extends AOpcode {
   async execute() {
-    this.debugOpcode();
-    throw new Error(`[tinyevm] opcode 'EXP(0x0a)' not implemented.`);
+    const [base, exponent] = this.ctx.stack.popN(2);
+    if (exponent === BigInt(0)) {
+      this.ctx.stack.push(BigInt(1));
+    } else if (base === BigInt(0)) {
+      this.ctx.stack.push(base);
+    } else {
+      const r = exponentiation(base, exponent);
+      this.ctx.stack.push(r);
+    }
+    this.debugOpcode(base, exponent);
   }
   async gasUsed() {
     return BigInt(0);
