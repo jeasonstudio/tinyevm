@@ -3,9 +3,10 @@ import { Chain, Common } from '@ethereumjs/common';
 import { Transaction, TxData } from '@ethereumjs/tx';
 import { Address } from '@ethereumjs/util';
 import assert from 'assert';
+import EventEmitter2 from 'eventemitter2';
 import { Context, IContextEEI, Log } from './context';
 import { Memory } from './memory';
-import { opcodeValueMap, UNIMPLEMENTED } from './opcodes';
+import { opcodeValueMap } from './opcodes';
 import { Stack } from './stack';
 import { Storage } from './storage';
 import {
@@ -62,6 +63,8 @@ export interface ICallContractResult extends IExecResultBase {
   parsedReturnValue: ReadonlyArray<any>;
 }
 
+export type TinyEVMEvent = [string, Function];
+
 /**
  * TinyEVM tiny evm implementation
  */
@@ -73,7 +76,7 @@ export class TinyEVM implements ITinyEVMOpts {
   // mapping(address -> code)
   private contracts = new Map<string, Buffer>();
 
-  // public events: AsyncEventEmitter<any> = new AsyncEventEmitter();
+  public events: EventEmitter2 = new EventEmitter2();
 
   public constructor(protected opts?: ITinyEVMOpts) {
     // debug('constructor options', opts);
@@ -116,7 +119,7 @@ export class TinyEVM implements ITinyEVMOpts {
       assert(ctx.programCounter >= 0, '[tinyevm] invalid program counter');
       assert(opcode !== undefined, '[tinyevm] invalid opcode');
 
-      const Factory = opcodeValueMap[opcode] || UNIMPLEMENTED;
+      const Factory = opcodeValueMap[opcode] || opcodeValueMap[0xfe];
       const operation = new Factory(ctx, ctx.programCounter);
 
       // 更新 program counter
@@ -215,4 +218,12 @@ export class TinyEVM implements ITinyEVMOpts {
       parsedReturnValue,
     };
   }
+
+  public addEventListener(
+    eventName: 'contract.deploy',
+    callback: (address: Address, code: Buffer) => Promise<void>
+  ) {
+    this.events.addListener(eventName, callback);
+  }
+  // public addEventListener() {}
 }

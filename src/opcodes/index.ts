@@ -13,4 +13,3 @@ export const opcodeValueMap = Object.fromEntries(
 );
 
 export * from './common';
-export * from './unimplemented';

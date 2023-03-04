@@ -11,8 +11,8 @@
     "test:watch": "jest --watch"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "jeason",
+  "license": "MIT",
   "devDependencies": {
     "@types/assert": "^1.5.6",
     "@types/debug": "^4.1.7",
@@ -33,6 +33,7 @@
     "@ethersproject/asm": "^5.7.0",
     "assert": "^2.0.0",
     "debug": "^4.3.4",
-    "ethereum-cryptography": "^1.2.0"
+    "ethereum-cryptography": "^1.2.0",
+    "eventemitter2": "^6.4.9"
   }
 }
