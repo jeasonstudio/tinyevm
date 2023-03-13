@@ -49,14 +49,3 @@ async function main() {
 }
 
 main().catch(console.error);
-
-// var output = JSON.parse(solc.compile(JSON.stringify(input)));
-
-// // `output` here contains the JSON output as specified in the documentation
-// for (var contractName in output.contracts['test.sol']) {
-//   console.log(
-//     contractName +
-//       ': ' +
-//       output.contracts['test.sol'][contractName].evm.bytecode.object
-//   );
-// }

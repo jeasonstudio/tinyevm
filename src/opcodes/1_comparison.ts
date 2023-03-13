@@ -1,4 +1,9 @@
+import { MAX_INTEGER_BIGINT } from '@ethereumjs/util';
 import { AOpcode, opcode } from './common';
+
+function fromTwos(a: bigint) {
+  return BigInt.asIntN(256, a);
+}
 
 @opcode(0x10, 'LT', 'v = lt(a, b)')
 export class LT extends AOpcode {
@@ -43,8 +48,10 @@ export class SLT extends AOpcode {
 @opcode(0x13, 'SGT', 'v = sgt(a, b)')
 export class SGT extends AOpcode {
   async execute() {
-    this.debugOpcode();
-    throw new Error(`[tinyevm] opcode 'SGT(0x13)' not implemented.`);
+    const [a, b] = this.ctx.stack.popN(2);
+    const r = fromTwos(a) > fromTwos(b) ? BigInt(1) : BigInt(0);
+    this.ctx.stack.push(r);
+    this.debugOpcode(a, b);
   }
   async gasUsed() {
     return BigInt(0);
@@ -81,9 +88,9 @@ export class ISZERO extends AOpcode {
 export class AND extends AOpcode {
   async execute() {
     const [a, b] = this.ctx.stack.popN(2);
-    this.debugOpcode(a, b);
     const r = a & b;
     this.ctx.stack.push(r);
+    this.debugOpcode(a, b);
   }
   async gasUsed() {
     return BigInt(0);
@@ -150,8 +157,15 @@ export class BYTE extends AOpcode {
 @opcode(0x1b, 'SHL', 'v = shl(shiftBits, value)')
 export class SHL extends AOpcode {
   async execute() {
-    this.debugOpcode();
-    throw new Error(`[tinyevm] opcode 'SHL(0x1b)' not implemented.`);
+    const [a, b] = this.ctx.stack.popN(2);
+    if (a > BigInt(256)) {
+      this.ctx.stack.push(BigInt(0));
+      return;
+    }
+
+    const r = (b << a) & MAX_INTEGER_BIGINT;
+    this.ctx.stack.push(r);
+    this.debugOpcode(a, b);
   }
   async gasUsed() {
     return BigInt(0);
@@ -179,8 +193,31 @@ export class SHR extends AOpcode {
 @opcode(0x1d, 'SAR', 'v = sar(shiftBits, value)')
 export class SAR extends AOpcode {
   async execute() {
-    this.debugOpcode();
-    throw new Error(`[tinyevm] opcode 'SAR(0x1d)' not implemented.`);
+    const [a, b] = this.ctx.stack.popN(2);
+
+    let r;
+    const bComp = BigInt.asIntN(256, b);
+    const isSigned = bComp < 0;
+    if (a > 256) {
+      if (isSigned) {
+        r = MAX_INTEGER_BIGINT;
+      } else {
+        r = BigInt(0);
+      }
+      this.ctx.stack.push(r);
+      return;
+    }
+
+    const c = b >> a;
+    if (isSigned) {
+      const shiftedOutWidth = BigInt(255) - a;
+      const mask = (MAX_INTEGER_BIGINT >> shiftedOutWidth) << shiftedOutWidth;
+      r = c | mask;
+    } else {
+      r = c;
+    }
+    this.ctx.stack.push(r);
+    this.debugOpcode(a, b);
   }
   async gasUsed() {
     return BigInt(0);

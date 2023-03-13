@@ -110,7 +110,11 @@ export class TinyEVM implements ITinyEVMOpts {
     debug('runTx', code);
 
     // 初始化上下文 Context
-    const ctx = new Context(tx, Object.assign({}, this.getBuiltinEEI(), eei));
+    const ctx = new Context(
+      tx,
+      this.events,
+      Object.assign({}, this.getBuiltinEEI(), eei)
+    );
     await ctx.prepare();
 
     // 程序运行

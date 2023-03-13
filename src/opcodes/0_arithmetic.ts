@@ -205,8 +205,18 @@ export class EXP extends AOpcode {
 @opcode(0x0b, 'SIGNEXTEND', 'v = signextend(value, byteWidth)')
 export class SIGNEXTEND extends AOpcode {
   async execute() {
-    this.debugOpcode();
-    throw new Error(`[tinyevm] opcode 'SIGNEXTEND(0x0b)' not implemented.`);
+    let [k, val] = this.ctx.stack.popN(2);
+    if (k < BigInt(31)) {
+      const signBit = k * BigInt(8) + BigInt(7);
+      const mask = (BigInt(1) << signBit) - BigInt(1);
+      if ((val >> signBit) & BigInt(1)) {
+        val = val | BigInt.asUintN(256, ~mask);
+      } else {
+        val = val & mask;
+      }
+    }
+    this.ctx.stack.push(val);
+    this.debugOpcode(k, val);
   }
   async gasUsed() {
     return BigInt(0);

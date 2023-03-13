@@ -5,6 +5,7 @@ import {
   bigIntToBuffer,
   generateAddress,
 } from '@ethereumjs/util';
+import EventEmitter2 from 'eventemitter2';
 import { Memory } from './memory';
 import { Stack } from './stack';
 
@@ -110,10 +111,17 @@ export class Context {
   public readonly gasLimit: bigint = BigInt(Number.MAX_SAFE_INTEGER);
   // Ethereum EVM Interface
   public readonly eei!: IContextEEI;
+  // Event Emitter
+  public events!: EventEmitter2;
 
   // 构造函数
-  public constructor(_tx: Transaction, _eei?: Partial<IContextEEI>) {
+  public constructor(
+    _tx: Transaction,
+    _events: EventEmitter2,
+    _eei?: Partial<IContextEEI>
+  ) {
     this.tx = _tx;
+    this.events = _events;
     this.gasLimit = _tx.gasLimit;
     if (_tx.to) {
       // tx.to 存在代表是一个合约调用
